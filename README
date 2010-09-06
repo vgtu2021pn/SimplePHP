@@ -35,7 +35,9 @@ if (Session::exists('session_variable')){
 Database Manager
 ~~~~~~~~~~~~~~~~
 
-This allows you to abstract database management, it is inspired by the wordpress database class but uses a static class to hold the database object rather than passing a database object around. 
+This allows you to abstract database management, it is inspired by the wordpress database class but uses a static class to hold the database object rather than passing a database object around. Since version 2.1, this class
+can handle master and slave connections. If any slave hosts are set then the class will open one single slave connection chosen at random from all of the slave hosts that are defined. This slave will be used 
+for all reads for this session. 
 
 Usage:
 
@@ -47,6 +49,8 @@ define("database_pass", "dbpass");
 define("database_name", "dbname");
 define("database_host", "localhost");
 define("database_verbose", false); // If set to true, the database will log activity using the Logger
+define("slave_host_1", "somehost"); // If set, defines a slave database to use for all reads
+define("slave_host_1", "somehost"); // If set, defines a slave database to use for all reads
 
 // Though you don't need to setup or explicitly create the connection (the class will check for connection and connect if 
 // needed when you call any of its methods.
