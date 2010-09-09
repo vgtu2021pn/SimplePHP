@@ -236,7 +236,7 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function make_sql_safe($string){
-		if (self::$currentCon == NULL) self::connect();
+		if (!self::$currentCon) self::useSlave();
         return mysql_real_escape_string($string, self::$currentCon);
     }
 
@@ -265,7 +265,11 @@ class DatabaseManager {
 	public static function prepare($query = null) { // ( $query, *$args )
 			
 		$args = func_get_args();
-				
+		
+		if (!self::$currentCon){	
+			self::useSlave();	
+		}
+		
 		array_shift($args);
 
 		// If args were passed as an array (as in vsprintf), move them up
@@ -279,6 +283,7 @@ class DatabaseManager {
 		
 		for($i=0; $i<count($args); $i++){
 			$args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
+//			$args[$i] = mysql_real_escape_string($args[$i]);
 		}
 		
 		//array_walk($args, array(&$this, 'mysql_real_escape_string'));
