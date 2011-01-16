@@ -59,7 +59,7 @@ class CommandHelper {
 		$browser_name = $browser->getBrowser();
 		$browser_version = $browser->getVersion();
 		
-	    if ($browser_name == Browser::BROWSER_IE && $browser_version < 7){
+	    if ($browser_name == BrowserDetect::BROWSER_IE && $browser_version < 7){
 	    	self::$ZIP_MESSAGE = false;
 		}
 		else {

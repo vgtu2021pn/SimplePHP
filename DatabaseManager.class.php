@@ -137,6 +137,9 @@ class DatabaseManager {
                 Logger::fatal("Connection to MySQL database '$host' failed with username " . self::$username . "!");
             }
         }
+        
+        // By default, set connection to the master DB
+        self::useMaster();
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -282,6 +285,10 @@ class DatabaseManager {
         $query = str_replace('%s', "'%s'", $query); // quote the strings
 
         for ($i = 0; $i < count($args); $i++) {
+	        if (self::$currentCon == NULL) {
+	        	Logger::debug("Null connections " . self::$currentCon);
+	        	self::connect();
+	        }
             $args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
         }
 
