@@ -59,7 +59,7 @@ class CommandHelper {
 		$browser_name = $browser->getBrowser();
 		$browser_version = $browser->getVersion();
 		
-	    if ($browser_name == Browser::BROWSER_IE && $browser_version < 7){
+	    if ($browser_name == BrowserDetect::BROWSER_IE && $browser_version < 7){
 	    	self::$ZIP_MESSAGE = false;
 		}
 		else {
@@ -147,7 +147,7 @@ class CommandHelper {
 	private static function sendValidateFailMessage($msg){
 		$data['result'] = 'fail';
 		$data['data'] = 'Validation failure: ' . $msg;
-		error_log("Validation failure!!!");
+		error_log($data['data']);
 		self::sendMessage($data);
 	}
 	
@@ -179,8 +179,13 @@ class CommandHelper {
 	
 		if (self::$ZIP_MESSAGE){
 			$msg = gzencode(json_encode($data));
-			header("Content-Encoding: gzip"); 
-			header("Content-Type: text/plain"); 		
+			if (isset($msg)){
+				header("Content-Encoding: gzip"); 
+				header("Content-Type: text/plain"); 		
+			}
+			else {
+				$msg = json_encode($data);
+			}
 		}
 		else {
 			$msg = json_encode($data);
