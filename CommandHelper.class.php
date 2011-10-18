@@ -111,7 +111,10 @@ class CommandHelper {
 	                break;
 	
 	            case self::$PARA_TYPE_STRING :
-	                return mysql_real_escape_string($val);
+	                $val = mysql_real_escape_string($val);
+	                // Remove all pesky back slashes and decode html tags
+	                $val = htmlspecialchars_decode($val);
+	                $val = str_replace('\\', '', $val);  
 	                break;
 	
 	            case self::$PARA_TYPE_JSON :
