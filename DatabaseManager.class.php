@@ -167,7 +167,7 @@ class DatabaseManager {
     public static function insert($query) {
 
 		// Prepare
-		$sql = self::prepareQuery($query, func_get_args());
+		$query = self::prepareQuery($query, func_get_args());;
 
         self::useMaster();
         $result = self::internalQuery($query);
@@ -179,7 +179,7 @@ class DatabaseManager {
     public static function update($query) {
 
 		// Prepare
-		$sql = self::prepareQuery($query, func_get_args());
+		$query = self::prepareQuery($query, func_get_args());;
 
         self::useMaster();
         $result = self::internalQuery($query);
@@ -195,7 +195,7 @@ class DatabaseManager {
     public static function submitQuery($query) {
 
 		// Prepare
-		$sql = self::prepareQuery($query, func_get_args());
+		$query = self::prepareQuery($query, func_get_args());
 
         self::useMaster();
         return self::internalQuery($query);
