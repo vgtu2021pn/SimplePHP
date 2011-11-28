@@ -60,11 +60,16 @@ DatabaseManager::connect();
 $sql = DatabaseManager::prepare("SELECT id FROM sometable WHERE textField = %s AND numericField = %d",  $string, $number ); 		
 
 // Get a single variable
-$id = DatabaseManager::getResults($sql);		
+$id = DatabaseManager::getVar("SELECT id FROM sometable WHERE textField = %s AND numericField = %d",  $string, $numbe);		
 
 // Get a result returned in a associative array
-$sql = DatabaseManager::prepare("SELECT * FROM sometable WHERE textField = %s AND numericField = %d",  $string, $number ); 		
-$data = DatabaseManager::getResults($sql);		
+$data = DatabaseManager::getResults("SELECT * FROM sometable WHERE textField = %s AND numericField = %d",  $string, $number);		
+
+// Get a single result returned in a associative array
+$data = DatabaseManager::getSingleResult("SELECT * FROM sometable WHERE textField = %s AND numericField = %d",  $string, $number);		
+
+// Get a single column, returned in an array
+$data = DatabaseManager::getColumn("SELECT val FROM sometable WHERE textField = %s AND numericField = %d",  $string, $number);		
 
 // Do a insert, and get the inserted row id
 $id = DatabaseManager::insert($sql);		
@@ -140,6 +145,9 @@ $para = CommandHelper::getPara('myParaName', true, CommandHelper::$PARA_TYPE_STR
 
 // To validate a $POST or $GET para called 'myParaName' that is NOT required and you expect to be a json encoded object call;
 $para = CommandHelper::getPara('myParaName', false, CommandHelper::$PARA_TYPE_JSON);
+
+// To validate a $POST or $GET para called 'myParaName' that is NOT required and you expect to be an array object call;
+$para = CommandHelper::getPara('myParaName', false, CommandHelper::$PARA_TYPE_ARRAY);
 
 // If validation fails, the class will send a JSON message in the form
 // {"result":"fail","data":"Validation failure: Parameter not set, expecting 'cmd'"}

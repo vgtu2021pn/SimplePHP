@@ -54,6 +54,7 @@ class CommandHelper {
 	public static $PARA_TYPE_NUMERIC = 0;
 	public static $PARA_TYPE_STRING = 1;
 	public static $PARA_TYPE_JSON = 2;
+	public static $PARA_TYPE_ARRAY = 3;
 	public static $ZIP_MESSAGE = true;
 	
 	// ///////////////////////////////////////////////////////////////////////////////////////
@@ -115,6 +116,7 @@ class CommandHelper {
 	                // Remove all pesky back slashes and decode html tags
 	                $val = htmlspecialchars_decode($val);
 	                $val = str_replace('\\', '', $val);  
+	                return $val;
 	                break;
 	
 	            case self::$PARA_TYPE_JSON :
@@ -125,6 +127,13 @@ class CommandHelper {
 		                return $val;
 	            	}
 	                break;
+	                
+	            case self::$PARA_TYPE_ARRAY :
+	            	if (is_array($val)){
+	            		return $val;
+	            	}	            	
+	                break;
+	                
 	        }
 	        
 			if ($required){
@@ -189,13 +198,8 @@ class CommandHelper {
 	
 		if (self::$ZIP_MESSAGE){
 			$msg = gzencode(json_encode($data));
-			if (isset($msg)){
-				header("Content-Encoding: gzip"); 
-				header("Content-Type: text/plain"); 		
-			}
-			else {
-				$msg = json_encode($data);
-			}
+			header("Content-Encoding: gzip"); 
+			header("Content-Type: text/plain"); 		
 		}
 		else {
 			$msg = json_encode($data);

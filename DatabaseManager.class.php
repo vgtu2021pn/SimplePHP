@@ -1,4 +1,5 @@
 <?php
+
 /**
 * *******************************************************************
 *
@@ -23,13 +24,13 @@
 * THE SOFTWARE.
 * 
 * *******************************************************************
- *
- * Class to handle and abstract interations to database
- *
- * @author Mike Pritchard (mike@adastrasystems.com)
- * @since July 6th, 2006
- * @version 2.1
- */
+*
+* Class to handle and abstract interations to database
+*
+* @author Mike Pritchard (mike@adastrasystems.com)
+* @since July 6th, 2006
+* @version 2.1
+*/
 class DatabaseManager {
 
     /** URL of MySQL server */
@@ -163,25 +164,11 @@ class DatabaseManager {
 
     // //////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Use the slave connection, if not available or set use the master DB instead
-     */
-    private static function useSlave() {
-        if (isset(self::$connections['slave'])) {
-            self::$currentCon = self::$connections['slave'];
-        } else {
-            self::useMaster();
-        }
-    }
-
-    /** Use the master connections */
-    private static function useMaster() {
-        self::$currentCon = self::$connections['master'];
-    }
-
-    // //////////////////////////////////////////////////////////////////////////////////////
-
     public static function insert($query) {
+
+		// Prepare
+		$sql = self::prepareQuery($query, func_get_args());
+
         self::useMaster();
         $result = self::internalQuery($query);
         return mysql_insert_id(self::$currentCon);
@@ -190,6 +177,10 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function update($query) {
+
+		// Prepare
+		$sql = self::prepareQuery($query, func_get_args());
+
         self::useMaster();
         $result = self::internalQuery($query);
         return $result;
@@ -202,36 +193,12 @@ class DatabaseManager {
      * of query the user is attempting
      */
     public static function submitQuery($query) {
+
+		// Prepare
+		$sql = self::prepareQuery($query, func_get_args());
+
         self::useMaster();
         return self::internalQuery($query);
-    }
-
-    // //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Perform a basic query using the current connection
-     */
-    private static function internalQuery($query) {
-
-        // Check to see if connection has been opened, if not connect to database
-        if (self::$currentCon == NULL)
-            self::connect();
-
-        if (self::$verbose == true) {
-            Logger::debug($query);
-        }
-
-        // Submit query....
-        $result = mysql_query($query, self::$currentCon);
-
-        // Handle result.....
-        if (!$result) {
-            Logger::fatal("Database query error = " . mysql_error(self::$currentCon) . " Query = [$query] ");
-        }
-        //else
-        //	Logger::debug("Database Query = [$query] ");
-
-        return $result;
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -255,55 +222,6 @@ class DatabaseManager {
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
-    //
-    // Helper methods
-    //
-    // //////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Prepares a SQL query for safe execution using sprintf style execution, it currently only
-     * supports %d (decimal number), %s (string). Both %d and %s should be left unquoted in the
-     * query string.
-     *
-     * <code>
-     * DatabaseManager::prepare( "SELECT * FROM someTable WHERE 'someField' = %s AND 'anotherField' = %d", "a string", 43346 )
-     * </code>
-     *
-     * This function was borrowed from and inspired by the Wordpress implementation.
-     *
-     * @param string $query Query statement with sprintf()-like placeholders
-     * @param array|mixed $args The array of variables to substitute into the query's placeholders if being called like {@link http://php.net/vsprintf vsprintf()}, or the first variable to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
-     * @param mixed $args,... further variables to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
-     * @return null|string Sanitized query string
-     */
-    public static function prepare($query = null) { // ( $query, *$args )
-        $args = func_get_args();
-
-        array_shift($args);
-
-        // If args were passed as an array (as in vsprintf), move them up
-        if (isset($args[0]) && is_array($args[0])) {
-            $args = $args[0];
-        }
-
-        $query = str_replace("'%s'", '%s', $query); // in case someone mistakenly already singlequoted it
-        $query = str_replace('"%s"', '%s', $query); // doublequote unquoting
-        $query = str_replace('%s', "'%s'", $query); // quote the strings
-
-        for ($i = 0; $i < count($args); $i++) {
-	        if (self::$currentCon == NULL) {
-	        	Logger::debug("Null connections " . self::$currentCon);
-	        	self::connect();
-	        }
-            $args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
-        }
-
-        //array_walk($args, array(&$this, 'mysql_real_escape_string'));
-
-        return @vsprintf($query, $args);
-    }
-
-    // //////////////////////////////////////////////////////////////////////////////////////
 
     /**
      * Performs the given SQL query and returns a single value, if multiple values are recieved it will 
@@ -312,6 +230,9 @@ class DatabaseManager {
      */
     public static function getVar($sql) {
 
+		// Prepare
+		$sql = self::prepareQuery($sql, func_get_args());
+		
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
@@ -338,6 +259,9 @@ class DatabaseManager {
      * rather then a single result
      */
     public static function getColumn($sql) {
+
+		// Prepare
+		$sql = self::prepareQuery($sql, func_get_args());
 
         self::useSlave();
 
@@ -366,6 +290,9 @@ class DatabaseManager {
      */
     public static function getRow($sql) {
 
+		// Prepare
+		$sql = self::prepareQuery($sql, func_get_args());
+
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
@@ -387,6 +314,9 @@ class DatabaseManager {
      * Get all the results for a query as an associative array, returns null if no results found
      */
     public static function getResults($sql) {
+
+		// Prepare
+		$sql = self::prepareQuery($sql, func_get_args());
 
         self::useSlave();
 
@@ -415,6 +345,9 @@ class DatabaseManager {
      */
     public static function getSingleResult($sql) {
 
+		// Prepare
+		$sql = self::prepareQuery($sql, func_get_args());
+
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
@@ -439,6 +372,153 @@ class DatabaseManager {
         return $data;
     }
 
+    // //////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Backwards compatability
+    //
+    // //////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Prepares a SQL query for safe execution using sprintf style execution, it currently only
+     * supports %d (decimal number), %s (string). Both %d and %s should be left unquoted in the
+     * query string.
+     *
+     * <code>
+     * DatabaseManager::prepare( "SELECT * FROM someTable WHERE 'someField' = %s AND 'anotherField' = %d", "a string", 43346 )
+     * </code>
+     *
+     * This function was borrowed from and inspired by the Wordpress implementation.
+     *
+     * @param string $query Query statement with sprintf()-like placeholders
+     * @param array|mixed $args The array of variables to substitute into the query's placeholders if being called like {@link http://php.net/vsprintf vsprintf()}, or the first variable to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
+     * @param mixed $args,... further variables to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
+     * @return null|string Sanitized query string
+     */
+    private static function prepare($query, $args) { // ( $query, *$args )
+        
+        $args = func_get_args();
+
+        array_shift($args);
+
+        // If args were passed as an array (as in vsprintf), move them up
+        if (isset($args[0]) && is_array($args[0])) {
+            $args = $args[0];
+        }
+
+        $query = str_replace("'%s'", '%s', $query); // in case someone mistakenly already singlequoted it
+        $query = str_replace('"%s"', '%s', $query); // doublequote unquoting
+        $query = str_replace('%s', "'%s'", $query); // quote the strings
+
+        for ($i = 0; $i < count($args); $i++) {
+	        if (self::$currentCon == NULL) {
+	        	Logger::debug("Null connections " . self::$currentCon);
+	        	self::connect();
+	        }
+            $args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
+        }
+
+        //array_walk($args, array(&$this, 'mysql_real_escape_string'));
+
+        return @vsprintf($query, $args);
+    }
+    
+    // //////////////////////////////////////////////////////////////////////////////////////
+    //
+    // Private methods
+    //
+    // //////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Prepares a SQL query for safe execution using sprintf style execution, it currently only
+     * supports %d (decimal number), %s (string). Both %d and %s should be left unquoted in the
+     * query string.
+     *
+     * <code>
+     * DatabaseManager::prepare( "SELECT * FROM someTable WHERE 'someField' = %s AND 'anotherField' = %d", "a string", 43346 )
+     * </code>
+     *
+     * This function was borrowed from and inspired by the Wordpress implementation.
+     *
+     * @param string $query Query statement with sprintf()-like placeholders
+     * @param array|mixed $args The array of variables to substitute into the query's placeholders if being called like {@link http://php.net/vsprintf vsprintf()}, or the first variable to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
+     * @param mixed $args,... further variables to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
+     * @return null|string Sanitized query string
+     */
+    private static function prepareQuery($query, $args) { // ( $query, *$args )
+        
+        //$args = func_get_args();
+
+        array_shift($args);
+
+        // If args were passed as an array (as in vsprintf), move them up
+        if (isset($args[0]) && is_array($args[0])) {
+            $args = $args[0];
+        }
+
+        $query = str_replace("'%s'", '%s', $query); // in case someone mistakenly already singlequoted it
+        $query = str_replace('"%s"', '%s', $query); // doublequote unquoting
+        $query = str_replace('%s', "'%s'", $query); // quote the strings
+
+        for ($i = 0; $i < count($args); $i++) {
+	        if (self::$currentCon == NULL) {
+	        	Logger::debug("Null connections " . self::$currentCon);
+	        	self::connect();
+	        }
+            $args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
+        }
+
+        //array_walk($args, array(&$this, 'mysql_real_escape_string'));
+
+        return @vsprintf($query, $args);
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////////////
+    
+    /**
+     * Perform a basic query using the current connection
+     */
+    private static function internalQuery($query) {
+
+        // Check to see if connection has been opened, if not connect to database
+        if (self::$currentCon == NULL)
+            self::connect();
+
+        if (self::$verbose == true) {
+            Logger::debug($query);
+        }
+
+        // Submit query....
+        $result = mysql_query($query, self::$currentCon);
+
+        // Handle result.....
+        if (!$result) {
+            Logger::fatal("Database query error = " . mysql_error(self::$currentCon) . " Query = [$query] ");
+        }
+        //else
+        //	Logger::debug("Database Query = [$query] ");
+
+        return $result;
+    }    
+    
+    // //////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Use the slave connection, if not available or set use the master DB instead
+     */
+    private static function useSlave() {
+        if (isset(self::$connections['slave'])) {
+            self::$currentCon = self::$connections['slave'];
+        } else {
+            self::useMaster();
+        }
+    }
+
+    // //////////////////////////////////////////////////////////////////////////////////////
+
+    /** Use the master connections */
+    private static function useMaster() {
+        self::$currentCon = self::$connections['master'];
+    }    
 }
 
 ?>
