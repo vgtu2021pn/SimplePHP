@@ -394,7 +394,7 @@ class DatabaseManager {
      * @param mixed $args,... further variables to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
      * @return null|string Sanitized query string
      */
-    private static function prepare($query, $args) { // ( $query, *$args )
+    public static function prepare($query) { // ( $query, *$args )
         
         $args = func_get_args();
 
