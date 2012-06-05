@@ -61,6 +61,7 @@ class CommandHelper {
 	
 	public static function init(){
 	
+		/*
 		$browser = new BrowserDetect();
 			 	
 		// Turn off gzip for IE6 or lower, 'cos it can't handle it
@@ -73,6 +74,7 @@ class CommandHelper {
 		else {
 	    	self::$ZIP_MESSAGE = true;
 		}
+		*/
 	}
 	
 	// ///////////////////////////////////////////////////////////////////////////////////////
@@ -122,9 +124,9 @@ class CommandHelper {
 	            case self::$PARA_TYPE_JSON :
 	            	$typestr = 'JSON';
 	            	// Test to see if it can be decoded
-	            	$test = json_decode($val);
-	            	if ($test){
-		                return $val;
+	            	$test = json_decode($val, true);
+	            	if ($test !== FALSE){
+		                return $test;
 	            	}
 	                break;
 	                
@@ -137,7 +139,7 @@ class CommandHelper {
 	        }
 	        
 			if ($required){
-				self::sendValidateFailMessage("Validation failed, expecting '$paraName' to be of type $typestr");
+				self::sendValidateFailMessage("Validation failed, expecting '$paraName' to be of type $typestr (got $val)");
 				die();
 			}
 	        
