@@ -123,8 +123,14 @@ class CommandHelper {
 	
 	            case self::$PARA_TYPE_JSON :
 	            	$typestr = 'JSON';
+	            	
 	            	// Test to see if it can be decoded
+	                $val = mysql_real_escape_string($val);
+	                $val = htmlspecialchars_decode($val);
+	                $val = str_replace('\\', '', $val);  
+	                
 	            	$test = json_decode($val, true);
+	            	
 	            	if ($test !== FALSE){
 		                return $test;
 	            	}
