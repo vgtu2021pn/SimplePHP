@@ -125,6 +125,8 @@ class CommandHelper {
 	            	$typestr = 'JSON';
 	            	
 	            	// Test to see if it can be decoded
+	            	$cr_list = array("\r\n", "\n", "\r"); // Remove new line character
+	                $val = str_replace($cr_list, '', $val);  
 	                $val = mysql_real_escape_string($val);
 	                $val = htmlspecialchars_decode($val);
 	                $val = str_replace('\\', '', $val);  
