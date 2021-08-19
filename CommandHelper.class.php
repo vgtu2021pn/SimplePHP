@@ -52,41 +52,43 @@
 class CommandHelper {
 
 	public static $PARA_TYPE_NUMERIC = 0;
-	public static $PARA_TYPE_STRING = 1;
-	public static $PARA_TYPE_JSON = 2;
-	public static $PARA_TYPE_ARRAY = 3;
+	public static $PARA_TYPE_INT = 1;
+	public static $PARA_TYPE_FLOAT = 2;
+	public static $PARA_TYPE_STRING = 3;
+	public static $PARA_TYPE_BOOL = 4;
+	public static $PARA_TYPE_JSON = 5;
+	public static $PARA_TYPE_ARRAY = 6;
+	public static $PARA_TYPE_OBJECT = 7;
 	public static $ZIP_MESSAGE = true;
 	
 	// ///////////////////////////////////////////////////////////////////////////////////////
 	
 	public static function init(){
 	
-		/*
 		$browser = new BrowserDetect();
 			 	
-		// Turn off gzip for IE6 or lower, 'cos it can't handle it
+		// Turn off gzip for IE6 or lower
 		$browser_name = $browser->getBrowser();
 		$browser_version = $browser->getVersion();
 		
-	    if ($browser_name == BrowserDetect::BROWSER_IE && $browser_version < 7){
+	    if ($browser_name == BrowserDetect::BROWSER_IE && $browser_version < 7) {
 	    	self::$ZIP_MESSAGE = false;
 		}
 		else {
 	    	self::$ZIP_MESSAGE = true;
-		}
-		*/
+	    }
 	}
 	
 	// ///////////////////////////////////////////////////////////////////////////////////////
 	
 	/**
-	* Get a para from either a $_GET or $_POST. Also, check for any sql injection attacks
+	* Get a para from either a $_GET or $_POST.
 	*
 	* @return The validated para, or null if validation failed.
 	* @para paraName
-	* @para required if true, this will return an error message and kill the php session
+	* @para required if true, this will return an error message and quits from the php session
 	*/
-	public static function getPara($paraName, $required=false, $type=0){
+	public static function getPara($paraName, $required=false, $type=0) {
 	
 	    $val = false;
 	    $val_set = false;
@@ -102,69 +104,93 @@ class CommandHelper {
 	
 		$typestr = "Unknown";
 	
-	    if ($val_set){
+	    if ($val_set) {
 	
-	        switch($type){
+	        switch($type) {
 	            
 	            case self::$PARA_TYPE_NUMERIC :
 	            	$typestr = 'numeric';
-	                if (is_numeric($val)){
+	                if (is_numeric($val)) {	                	
+	                	return $val;
+	                }
+	                break;
+	            
+	            case self::$PARA_TYPE_INT :
+	            	$typestr = 'integer';
+	                if (is_integer($val)) {
+	                	return $val;
+	                }
+	                break;
+	            
+	            case self::$PARA_TYPE_FLOAT :
+	            	$typestr = 'float';
+	                if (is_float($val)) {
 	                	return $val;
 	                }
 	                break;
 	
 	            case self::$PARA_TYPE_STRING :
-	                $val = mysql_real_escape_string($val);
-	                // Remove all pesky back slashes and decode html tags
-	                $val = htmlspecialchars_decode($val);
-	                $val = str_replace('\\', '', $val);  
-	                return $val;
+	                $typestr = 'string';
+	                if (is_string($val)) {
+	                	return $val;
+	                }
 	                break;
-	
+	                
+	            case self::$PARA_TYPE_BOOL :
+	            	$typestr = 'bool';
+	                if (is_bool($a) === true) {
+	                	return $val;
+	                }
+	                break;
+			
 	            case self::$PARA_TYPE_JSON :
-	            	$typestr = 'JSON';
+	            	$typestr = 'json';
 	            	
 	            	// Test to see if it can be decoded
 	            	$cr_list = array("\r\n", "\n", "\r"); // Remove new line character
-	                $val = str_replace($cr_list, '', $val);  
-	                $val = mysql_real_escape_string($val);
-	                $val = htmlspecialchars_decode($val);
-	                $val = str_replace('\\', '', $val);  
+	                $val = str_replace($cr_list, '', $val);
 	                
-	            	$test = json_decode($val, true);
+	            	$test = json_decode($val, true); // JSON obj to assoc array
 	            	
-	            	if ($test !== FALSE){
-		                return $test;
+	            	if ($test !== FALSE) {
+		                return json_encode($test, JSON_FORCE_OBJECT); // assoc array to JSON obj
 	            	}
 	                break;
 	                
 	            case self::$PARA_TYPE_ARRAY :
-	            	if (is_array($val)){
+	            	$typestr = 'array';
+	            	if (is_array($val)) {
 	            		return $val;
 	            	}	            	
 	                break;
 	                
+	            case self::$PARA_TYPE_OBJECT :
+	            	$typestr = 'object';
+	            	if (is_object($val)) {
+	            		return $val;
+	            	}            	
+	                break;
 	        }
 	        
-			if ($required){
-				self::sendValidateFailMessage("Validation failed, expecting '$paraName' to be of type $typestr (got $val)");
-				die();
-			}
-	        
+	        if ($required) {
+	        	self::sendValidateFailMessage("Validation failed, expecting '".$paraName."' to be of type '".$typestr."' (got ".gettype($val).")");
+	        	exit();
+	        }
 	    }
-
-		// If we get here, then could not find para in $GET or $POST	        
-		if ($required){
-			self::sendValidateFailMessage("Parameter not set, expecting '$paraName'");
-			die();
-		}
-				
-		return false;
+	    
+	    // If we get here, then could not find para in $GET or $POST
+	    
+	    if ($required){
+	    	self::sendValidateFailMessage("Parameter not set, expecting '".$paraName."'");
+	    	exit();
+	    }
+	    
+	    return false;
 	}
 
 	// ///////////////////////////////////////////////////////////////////////////////////////
 	
-	public static function sendAuthorizationFailMessage($msg){
+	public static function sendAuthorizationFailMessage($msg) {
 		$data['result'] = 'fail';
 		$data['data'] = 'Authorization failure: ' . $msg;
 		error_log("Authorization failure!!!");
@@ -173,7 +199,7 @@ class CommandHelper {
 
 	// ///////////////////////////////////////////////////////////////////////////////////////
 
-	private static function sendValidateFailMessage($msg){
+	private static function sendValidateFailMessage($msg) {
 		$data['result'] = 'fail';
 		$data['data'] = 'Validation failure: ' . $msg;
 		error_log($data['data']);
@@ -185,9 +211,9 @@ class CommandHelper {
 	/**
 	* Send a normal text (string) message back to the client.
 	*/
-	public static function sendTextMessage($msg){
+	public static function sendTextMessage($msg) {
 	
-		if (self::$ZIP_MESSAGE){
+		if (self::$ZIP_MESSAGE) {
 			$msg = gzencode($msg);
 			header("Content-Encoding: gzip"); 
 			header("Content-Type: text/plain"); 		
@@ -204,9 +230,9 @@ class CommandHelper {
 	*
 	* @param data - The data to be encoded
 	*/
-	public static function sendMessage($data){
+	public static function sendMessage($data) {
 	
-		if (self::$ZIP_MESSAGE){
+		if (self::$ZIP_MESSAGE) {
 			$msg = gzencode(json_encode($data));
 			header("Content-Encoding: gzip"); 
 			header("Content-Type: text/plain"); 		
