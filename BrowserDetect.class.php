@@ -6,6 +6,7 @@
  * @version 1.6
  * @package PegasusPHP
  * @see http://chrisschuld.com/projects/browser-php-detecting-a-users-browser-from-php
+ * @see https://github.com/cbschuld/Browser.php
  * 
  * Copyright (C) 2008-2009 Chris Schuld  (chris@chrisschuld.com)
  *
@@ -929,7 +930,7 @@ class BrowserDetect {
 		else if( preg_match('/win/i', $this->_agent) ) {
 			$this->_platform = self::PLATFORM_WINDOWS;
 			foreach(self::$os_windows as $regex => $name) {
-				if( eregi($regex, $this->_agent) ) {
+				if( mb_eregi($regex, $this->_agent) ) {
 					$this->_os = $name;
 					break;
 				}
@@ -942,7 +943,7 @@ class BrowserDetect {
 		elseif( preg_match('/linux/i', $this->_agent) ) {
 			$this->_platform = self::PLATFORM_LINUX;
 			foreach(self::$os_linux as $regex => $name) {
-				if( eregi($regex, $this->_agent) ) {
+				if( mb_eregi($regex, $this->_agent) ) {
 					$this->_os = $name;
 					break;
 				}
