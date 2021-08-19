@@ -1,4 +1,11 @@
-Session Manager
+* Simple App
+
+Includes:
+db.sql - Backup of MySQL database "company"
+index.php - Basic Authentication Page
+homepage.php - Authorized User Page
+
+* Session Manager
 ~~~~~~~~~~~~~~~
 
 This allows you to abstract Session management, particularly useful if you want to do secure your sessions by using a database or extend this class to do even more interesting things! 
@@ -50,7 +57,7 @@ if (Session::exists('session_variable')){
 }
 
 
-Database Manager
+* Database Manager
 ~~~~~~~~~~~~~~~~
 
 This allows you to abstract database management, it is inspired by the wordpress database class but uses a static class to hold the database object rather than passing a database object around. Since version 2.1, this class
@@ -101,7 +108,8 @@ DatabaseManager::submitQuery($sql);
 // You can manually close the connection
 DatabaseManager::close();
 
-Logger
+
+* Logger
 ~~~~~~
 
 The logger class makes php logging simple, and the output includes a stack track indicating the function/method/class and line number of the last 2 calls on the stack. Handy for tracking down bugs! You can also have the 
@@ -141,20 +149,8 @@ Logger::info("some message");
 Logger::fatal("some message");
 
 
-Usage
-
-CommsManager
+* Command Manager
 ~~~~~~~~~~~~
-
-This class allows you to sanitize parameters sent from the user to the backend using Ajax or simple POST/GET methods. It also allows for the sending of JSON messages back to the server. The class can be initialized which
-simply detects if the users browser is IE6 or not, as this contains crappy support for gzip, and if so turns gzipping off. This will require  Chris Schuld (http://chrisschuld.com/) excellent browser detection class which is 
-included as part of this repo, or you can get the latest at http://chrisschuld.com/projects/browser-php-detecting-a-users-browser-from-php.
-
-Usage:
-
-// (Optional) detect if the browser is IE6, if so turn off gzipping of any data sent back to the user's browser.
-// Or you can just set CommandHelper::$ZIP_MESSAGE yourself to turn gzipping on or off.
-CommandHelper::init();
 
 // Validation examples;
 
