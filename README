@@ -11,11 +11,29 @@ Session::init(false);
 // ... or, initialize the session, and use the a database to store the session data
 Session::init(true);
 
-// If we're using a database, then you must have a table with the following fields;
-//
-// id varchar(32) {primary key}
-// access int (10)
+// If using a database to store the sessions, then you need to have a table
+// with the following fields:
+// id varchar(255) {primary key}
+// access datetime
 // data text
+
+// If using a database to store the system errors, then you need to have a table
+// with the following fields:
+//
+// log_time datetime {}
+// no mediumint
+// message text
+// file varchar(255)
+// line mediumint;
+
+// If using a database to store the users, then you need to have a table
+// with the following fields:
+//
+// id int {primary key}
+// username char(100)
+// password char(100)
+// nickname varchar(125)
+// status tinyint;
 
 // Set a session variable
 Session::set('session_variable', 5);
@@ -93,6 +111,9 @@ Usage:
 
 // Tell the logger to catch system errors
 Logger::catchSysErrors();
+
+// Tell the logger to catch system errors and store log into database
+Logger::catchSysErrors(true);
 
 // To the logger to echo the log as HTML
 Logger::echoLog();
