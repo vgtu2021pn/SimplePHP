@@ -10,7 +10,6 @@ homepage.php - Authorized User Page
 
 
 * Session Manager
-~~~~~~~~~~~~~~~
 
 Initialize the session, and use php's standard session management
 
@@ -80,7 +79,6 @@ if (Session::exists('session_variable')){
 
 
 * Database Manager
-~~~~~~~~~~~~~~~~
 
 Set your database credentials, i.e. 'settings.php.sticky' 
 
@@ -158,7 +156,6 @@ DatabaseManager::close();
 
 
 * Logger
-~~~~~~
 
 Tell the logger to catch system errors
 
@@ -210,7 +207,6 @@ Logger::fatal("some message");
 ```
 
 * Command Manager
-~~~~~~~~~~~~
 
 Validation examples
 
