@@ -38,20 +38,21 @@ class Logger {
 	
 	private static $debugLevel = 0;
 	
-	private static $echoLog = false;
+	private static $echoLog = false;	
+	private static $dbLog = false;
 							
 	// //////////////////////////////////////////////////////////////////////////////////////
 
 	/**
 	* Class constructor
 	*/
-	public function __construct(){
+	public function __construct() {
 		self::init();
 	}
 
 	// //////////////////////////////////////////////////////////////////////////////////////
 
-	public static function echoLog(){
+	public static function echoLog() {
 		self::$echoLog = true;
 	}
 
@@ -60,7 +61,12 @@ class Logger {
     /**
      * Let the Logger catch any system errors
      */
-    public static function catchSysErrors(){
+    public static function catchSysErrors($dblog = false) {
+        
+        if($dblog) {
+        	self::$dbLog = true;
+        }
+        
         set_error_handler("Logger::sysErrorHandler");
     }
 
@@ -69,9 +75,9 @@ class Logger {
 	/**
 	* 
 	*/
-	private static function trace($level, $msg){
+	private static function trace($level, $msg) {
 
-		if ($level < self::$debugLevel){
+		if ($level < self::$debugLevel) {
 			return;
 		}
 			   
@@ -81,7 +87,7 @@ class Logger {
 		$function = "";
 		
 		// get class, function called by caller of caller of caller
-		if (isset($bt[2]['class'])){
+		if (isset($bt[2]['class'])) {
 			$class = $bt[2]['class'];
 			$function = "." . $bt[2]['function'];
 		}
@@ -94,9 +100,9 @@ class Logger {
 		$file_name = basename($file);
 					
 					
-		if (self::$echoLog){
+		if (self::$echoLog) {
 
-			switch($level){
+			switch($level) {
 				case self::$DEBUG: 	$levMsg = "<span style='color:009900'>debug</span>"; break;
 				case self::$INFO:  	$levMsg = "<span style='color:0000FF'>info</span>"; break;
 				case self::$WARNING:$levMsg = "<span style='color:FF6633'>warning</span>"; break;
@@ -104,8 +110,8 @@ class Logger {
 				case self::$FATAL: 	$levMsg = "<span style='color:FF0000'><b>fatal</b></span>"; break;
 			}
 
-			$msg = "[$levMsg <span style='color:#000099'>$class$function</span>] <b>$msg</b>";
-			$msg .= "<span style='color: #444; font-style: italic;'> on line $line of $file_name</span>";
+			$msg = "[$levMsg <span style='color:#000099'>$class$function</span>] <b>".htmlentities($msg)."</b>";
+			$msg .= "<span style='color: #444; font-style: italic;'> on line ".(int)$line." of ".htmlentities($file_name)."</span>";
 			if (isset($bt[2]['file'])){
 				$fname = basename($bt[2]['file']);
 				$msg .= "<span style='color: #889; font-style: italic;'>, called from line ".$bt[2]['line']." of $fname</span>";
@@ -123,7 +129,7 @@ class Logger {
 	
 			// Translate level into text...
 			$levMsg = "????";
-			switch($level){
+			switch($level) {
 				case self::$DEBUG: 	$levMsg = "DEBUG"; break;
 				case self::$INFO:  	$levMsg = "INFO"; break;
 				case self::$WARNING:$levMsg = "WARNING"; break;
@@ -133,11 +139,11 @@ class Logger {
 					
 			$msg = "[$levMsg] $class$function $msg";
 			$msg .= " {on line $line of $file_name";
-			if (isset($bt[2]['file'])){
+			if (isset($bt[2]['file'])) {
 				$fname = basename($bt[2]['file']);
 				$msg .= ", called from line ".$bt[2]['line']." of $fname";
 			}
-			if (isset($bt[3]['file'])){
+			if (isset($bt[3]['file'])) {
 				$fname = basename($bt[3]['file']);
 				$msg .= ", called from line ".$bt[3]['line']." of $fname";
 			}
@@ -154,8 +160,12 @@ class Logger {
      * Use to replace system error handler, if desired. Use Logger::catchSysErrors() to
      * activate
      */
-    public static function sysErrorHandler($errno, $errstr, $errfile, $errline){
+    public static function sysErrorHandler($errno, $errstr, $errfile, $errline) {
 
+        if(self::$dbLog) {
+        	DatabaseManager::logMessage($errno, $errstr, $errfile, $errline);
+        }
+        
         switch ($errno) {
             case E_USER_ERROR:
                 $levMsg = "SYS_ERROR";
@@ -173,19 +183,18 @@ class Logger {
                 $levMsg = "SYS_UNKNOWN";
                break;
         }
-
-
-        if (self::$echoLog){
-            
+        
+        if (self::$echoLog) {
+        
 			switch($errno){
-				case E_USER_NOTICE:  $levMsg = "<span style='color:0000FF'>info</span>"; break;
-				case E_USER_WARNING:$levMsg = "<span style='color:FF6633'>warning</span>"; break;
-				case E_USER_ERROR: 	$levMsg = "<span style='color:FF0101'>error</span>"; break;
+				case E_USER_NOTICE: $levMsg = "<span style='color:0000FF'>info</span>"; break;
+				case E_USER_WARNING: $levMsg = "<span style='color:FF6633'>warning</span>"; break;
+				case E_USER_ERROR: $levMsg = "<span style='color:FF0101'>error</span>"; break;
 				default: $levMsg = "<span style='color:009900'>debug</span>"; break;
 			}
 
-			$msg = "[$levMsg <span style='color:#000099'>#$errno</span>] <b>$errstr</b>";
-			$msg .= "<span style='color: #444; font-style: italic;'> on line $errline of ".basename($errfile)."</span>";
+			$msg = "[$levMsg <span style='color:#000099'>#".(int)$errno."</span>] <b>".htmlentities($errstr)."</b>";
+			$msg .= "<span style='color: #444; font-style: italic;'> on line ".(int)$errline." of ".basename($errfile)."</span>";
 			$msg .= "<br>\n";
 
 			echo $msg;
@@ -195,8 +204,8 @@ class Logger {
         }
         else {
 
-            $msg = "[$levMsg] No: $errno Msg: $errstr";
-            $msg .= " {on line $errline of ".basename($errfile)."}";
+            $msg = "[$levMsg] No: ".(int)$errno." Msg: $errstr";
+            $msg .= " {on line ".(int)$errline." of ".basename($errfile)."}";
 
             error_log($msg);
         }
