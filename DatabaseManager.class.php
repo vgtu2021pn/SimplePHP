@@ -36,11 +36,11 @@ class DatabaseManager {
     /** URL of MySQL server */
     private static $databaseURL = "localhost";
     /** Name of MySQL database */
-    private static $databaseName = "";
+    private static $databaseName = "company";
     /** Username of user with admin rights to database */
-    private static $username = "";
+    private static $username = "company";
     /** Password of user with admin rights to database */
-    private static $password = "";
+    private static $password = "company";
     /** verbose flag, if true debug data is dumped */
     private static $verbose = false;
     /**
@@ -113,13 +113,13 @@ class DatabaseManager {
         $hosts = array();
 
         // Attempt to connect to master DB....
-        self::$connections['master'] = mysql_connect(self::$databaseURL, self::$username, self::$password);
+        self::$connections['master'] = mysqli_connect(self::$databaseURL, self::$username, self::$password);
         $hosts['master'] = self::$databaseURL;
 
         // Connect to a single random slave, to use for this session
         if ($noSlaves > 0) {
             $host = $slaveDBs[mt_rand(0, $noSlaves - 1)];
-            self::$connections['slave'] = mysql_connect($host, self::$username, self::$password);
+            self::$connections['slave'] = mysqli_connect($host, self::$username, self::$password);
             $hosts['slave'] = $host;
         }
 
@@ -134,7 +134,7 @@ class DatabaseManager {
             if ($cx != FALSE) {
 
                 // Select the relevant database.........
-                if (!mysql_select_db(self::$databaseName, $cx)) {
+                if (!mysqli_select_db($cx, self::$databaseName)) {
                     Logger::fatal("Connection to MySQL database '" . self::$databaseName . "' FAILED for " . $hosts[$host] . " ($host)");
                 }
                 //else {
@@ -158,7 +158,7 @@ class DatabaseManager {
         // Close the connections
         foreach (self::$connections as $cx) {
             if ($cx)
-                @mysql_close($cx);
+                @mysqli_close($cx);
         }
     }
 
@@ -166,20 +166,20 @@ class DatabaseManager {
 
     public static function insert($query) {
 
-		// Prepare
-		$query = self::prepareQuery($query, func_get_args());;
+	// Prepare
+	$query = self::prepareQuery($query, func_get_args());
 
         self::useMaster();
         $result = self::internalQuery($query);
-        return mysql_insert_id(self::$currentCon);
+        return mysqli_insert_id(self::$currentCon);
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function update($query) {
 
-		// Prepare
-		$query = self::prepareQuery($query, func_get_args());;
+	// Prepare
+	$query = self::prepareQuery($query, func_get_args());
 
         self::useMaster();
         $result = self::internalQuery($query);
@@ -194,8 +194,8 @@ class DatabaseManager {
      */
     public static function submitQuery($query) {
 
-		// Prepare
-		$query = self::prepareQuery($query, func_get_args());
+	// Prepare
+	$query = self::prepareQuery($query, func_get_args());
 
         self::useMaster();
         return self::internalQuery($query);
@@ -204,21 +204,20 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function freeResult($query_result) {
-        if ($query_result != false || $query_result != NULL)
-        //mysql_free_result($query_result, self::$connection);
+        if ($query_result != false || $query_result != NULL) {        
             try {
-                @mysql_free_result($query_result, self::$currentCon);
+                @mysqli_free_result($query_result);
             } catch (Exception $e) {
                 Logger::error('Caught exception: ', $e->getMessage());
             }
+        }
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function make_sql_safe($string) {
-        if (self::$currentCon == NULL)
-            self::connect();
-        return mysql_real_escape_string($string, self::$currentCon);
+        if (self::$currentCon == NULL) self::connect();
+        return mysqli_real_escape_string(self::$currentCon, $string);
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -230,8 +229,8 @@ class DatabaseManager {
      */
     public static function getVar($sql) {
 
-		// Prepare
-		$sql = self::prepareQuery($sql, func_get_args());
+	// Prepare
+	$sql = self::prepareQuery($sql, func_get_args());
 		
         self::useSlave();
 
@@ -242,8 +241,8 @@ class DatabaseManager {
             return null;
         }
 
-        $row = mysql_fetch_array($results, MYSQL_NUM);
-        mysql_free_result($results);
+        $row = mysqli_fetch_array($results, MYSQL_NUM);
+        mysqli_free_result($results);
 
         if (isset($row) && isset($row[0])) {
             return $row[0];
@@ -260,25 +259,25 @@ class DatabaseManager {
      */
     public static function getColumn($sql) {
 
-		// Prepare
-		$sql = self::prepareQuery($sql, func_get_args());
+	// Prepare
+	$sql = self::prepareQuery($sql, func_get_args());
 
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
 
-        if (!$results || mysql_num_rows($results) == 0) {
+        if (!$results || mysqli_num_rows($results) == 0) {
             return null;
         }
 
         $data = array();
 
         // Build the output data
-        while ($row = mysql_fetch_array($results)) {
+        while ($row = mysqli_fetch_array($results)) {
             $data[] = $row[0];
         }
 
-        mysql_free_result($results);
+        mysqli_free_result($results);
 
         return $data;
     }
@@ -290,20 +289,19 @@ class DatabaseManager {
      */
     public static function getRow($sql) {
 
-		// Prepare
-		$sql = self::prepareQuery($sql, func_get_args());
+	// Prepare
+	$sql = self::prepareQuery($sql, func_get_args());
 
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
 
-        if (!$results || mysql_num_rows($results) == 0) {
+        if (!$results || mysqli_num_rows($results) == 0) {
             return null;
         }
-
-
-        $row = mysql_fetch_assoc($result);
-        mysql_free_result($results);
+        
+        $row = mysqli_fetch_assoc($result);
+        mysqli_free_result($results);
 
         return $row;
     }
@@ -315,25 +313,25 @@ class DatabaseManager {
      */
     public static function getResults($sql) {
 
-		// Prepare
-		$sql = self::prepareQuery($sql, func_get_args());
+	// Prepare
+	$sql = self::prepareQuery($sql, func_get_args());
 
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
 
-        if (!$results || mysql_num_rows($results) == 0) {
+        if (!$results || mysqli_num_rows($results) == 0) {
             return null;
         }
 
         $data = array();
 
         // Build the output data
-        while ($row = mysql_fetch_assoc($results)) {
+        while ($row = mysqli_fetch_assoc($results)) {
             $data[] = $row;
         }
 
-        mysql_free_result($results);
+        mysqli_free_result($results);
 
         return $data;
     }
@@ -345,21 +343,21 @@ class DatabaseManager {
      */
     public static function getSingleResult($sql) {
 
-		// Prepare
-		$sql = self::prepareQuery($sql, func_get_args());
+	// Prepare
+	$sql = self::prepareQuery($sql, func_get_args());
 
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
 
-        if (!$results || mysql_num_rows($results) == 0) {
+        if (!$results || mysqli_num_rows($results) == 0) {
             return null;
         }
 
         $data = array();
 
         // Build the output data
-        while ($row = mysql_fetch_assoc($results)) {
+        while ($row = mysqli_fetch_assoc($results)) {
             $data[] = $row;
         }
 
@@ -367,7 +365,7 @@ class DatabaseManager {
             $data = $data[0];
         }
 
-        mysql_free_result($results);
+        mysqli_free_result($results);
 
         return $data;
     }
@@ -386,8 +384,6 @@ class DatabaseManager {
      * <code>
      * DatabaseManager::prepare( "SELECT * FROM someTable WHERE 'someField' = %s AND 'anotherField' = %d", "a string", 43346 )
      * </code>
-     *
-     * This function was borrowed from and inspired by the Wordpress implementation.
      *
      * @param string $query Query statement with sprintf()-like placeholders
      * @param array|mixed $args The array of variables to substitute into the query's placeholders if being called like {@link http://php.net/vsprintf vsprintf()}, or the first variable to substitute into the query's placeholders if being called like {@link http://php.net/sprintf sprintf()}.
@@ -414,7 +410,7 @@ class DatabaseManager {
 	        	Logger::debug("Null connections " . self::$currentCon);
 	        	self::connect();
 	        }
-            $args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
+            $args[$i] = mysqli_real_escape_string(self::$currentCon, $args[$i]);
         }
 
         //array_walk($args, array(&$this, 'mysql_real_escape_string'));
@@ -464,7 +460,7 @@ class DatabaseManager {
 	        	Logger::debug("Null connections " . self::$currentCon);
 	        	self::connect();
 	        }
-            $args[$i] = mysql_real_escape_string($args[$i], self::$currentCon);
+            $args[$i] = mysqli_real_escape_string(self::$currentCon, $args[$i]);
         }
 
         //array_walk($args, array(&$this, 'mysql_real_escape_string'));
@@ -488,11 +484,11 @@ class DatabaseManager {
         }
 
         // Submit query....
-        $result = mysql_query($query, self::$currentCon);
+        $result = mysqli_query(self::$currentCon, $query);
 
         // Handle result.....
         if (!$result) {
-            Logger::fatal("Database query error = " . mysql_error(self::$currentCon) . " Query = [$query] ");
+            Logger::fatal("Database query error = " . mysqli_error(self::$currentCon) . " Query = [$query] ");
         }
         //else
         //	Logger::debug("Database Query = [$query] ");
@@ -518,7 +514,23 @@ class DatabaseManager {
     /** Use the master connections */
     private static function useMaster() {
         self::$currentCon = self::$connections['master'];
-    }    
+    }
+    
+    public static function logMessage($no, $message, $file, $line) {
+		
+	if(Session::dbFlagStarted()) {
+	
+		$no = (int)$no;
+		$message = mysqli_real_escape_string(self::$currentCon, $message);
+		$file = mysqli_real_escape_string(self::$currentCon, $file);
+		$line = (int)$line;
+	 		
+	 	return DatabaseManager::submitQuery("INSERT INTO lza_log (log_time, no, message, file, line) VALUES (NOW(), '$no', '$message', '$file', '$line')");
+ 	}
+ 	else {
+ 		throw new Exception("Database usage flag in the Session class is not set.");
+ 	}
+    }
 }
 
 ?>
