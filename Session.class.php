@@ -30,20 +30,226 @@
 * default (php) session manager).
 *
 * If using a database to store the sessions, then you need to have a table
-* with the following fields;
+* with the following fields:
 *
-* id varchar(32) {primary key}
-* access int (10)
+* id varchar(255) {primary key}
+* access datetime
 * data text
+*
+* If using a database to store the system errors, then you need to have a table
+* with the following fields:
+*
+* log_time datetime {}
+* no mediumint
+* message text
+* file varchar(255)
+* line mediumint;
+*
+* If using a database to store the users, then you need to have a table
+* with the following fields:
+*
+* id int {primary key}
+* username char(100)
+* password char(100)
+* nickname varchar(125)
+* status tinyint;
 *
 * @author Mike Pritchard (mike@adastrasystems.com)
 * @since July 6th, 2006
 */
+class SysSession implements SessionHandlerInterface {
+
+    private $link;
+    
+    private $table_name = "lza_sessions";    
+
+    private $databaseURL = "localhost";
+
+    private $databaseName = "company";
+
+    private $username = "company";
+
+    private $password = "company";
+   
+    /*
+        self::connect();
+    */
+    
+    public function __construct() {
+    	$savePath = ini_get('session.save_path');
+    	$saveHandler = ini_get('session.save_handler');
+    	$sessionName = ini_get('session.name');
+	$maxlifetime = ini_get('session.gc_maxlifetime');
+	$sidLength = ini_get('session.sid_length');
+	$sidBitsPerCharacter = ini_get('session.sid_bits_per_character');
+
+    	//Logger::debug("Session $sidLength");
+    }
+    
+    public function open($savePath, $sessionName) {
+        $link = mysqli_connect($this->databaseURL, $this->username, $this->password, $this->databaseName);
+        if($link) {
+            $this->link = $link;
+            return true;
+        } else {
+            return false;
+        }
+   }
+    
+   /**
+    * These functions are closely related. These are used to 
+    * open the session data store and close it, respectively. If you are storing sessions in 
+    * the filesystem, these functions open and close files (and you likely need to use a global 
+    * variable for the file handler, so that the other session functions can use it).
+    */
+    
+    public function close() {
+        mysqli_close($this->link);
+        if ($this->link) {
+            return false;       	
+    	}
+        return true;
+    }
+    
+   /**
+    * The function is called whenever PHP needs to read the session data. This takes 
+    * place immediately after _open(), and both are a direct result of your use of session_start().
+    *
+    * PHP passes this function the session identifier, as the following example demonstrates:
+    */
+    /*
+        //Logger::debug("Session $session_id read");
+    	$id = mysqli_real_escape_string($session_id);
+		
+	    if ($result = DatabaseManager::submitQuery("SELECT data FROM " . self::$table_name . " WHERE id = '$id'")) {
+	        if (mysqli_num_rows($result)) {
+	            $record = mysqli_fetch_assoc($result);
+	            return $record['data'];
+	        }
+	    }
+	 
+	    return '';
+    */
+    
+    public function read($id) {
+        $result = mysqli_query($this->link, "SELECT data FROM ".$this->table_name." WHERE id = '".mysqli_real_escape_string($this->link, $id)."'");
+        if($row = mysqli_fetch_assoc($result)) {
+            return $row['data'];
+        } else {
+            return "";
+        }
+   }
+    
+   /**
+    * The function is called whenever PHP needs to write the session data. This takes 
+    * place at the very end of the script.
+    *
+    * PHP passes this function the session identifier and the session data. You don't need to 
+    * worry with the format of the data - PHP serializes it, so that you can treat it like a string. 
+    * However, PHP does not modify it beyond this, so you want to properly escape it before using 
+    * it in a query:
+    */
+    /*
+        //Logger::debug("Session $session_id write ($data)");
+		
+	    $access = time();
+ 
+    	$id = mysqli_real_escape_string($session_id);
+	    $access = mysqli_real_escape_string($access);
+    	$data = mysqli_real_escape_string($data);
+ 		
+		return DatabaseManager::submitQuery("REPLACE INTO " . self::$table_name . " VALUES ('$id', '$access', '$data')");
+    */
+    
+    public function write($id, $data) {
+        $result = mysqli_query($this->link,"REPLACE INTO ".$this->table_name." VALUES ('".mysqli_real_escape_string($this->link, $id)."', NOW(), '".mysqli_real_escape_string($this->link, $data)."');");
+        if($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+   /**
+    * The function is called whenever PHP needs to destroy all session data associated 
+    * with a specific session identifier. An obvious example is when you call session__destroy().
+    *
+    * PHP passes the session identifier to the function:
+    */
+    /*
+        //Logger::debug("Session destroy");
+
+	    $id = mysqli_real_escape_string($session_id);
+ 
+		return DatabaseManager::submitQuery("DELETE FROM " . self::$table_name . " WHERE id = '$id'");
+    */
+    
+    public function destroy($id) {
+        $result = mysqli_query($this->link, "DELETE FROM ".$this->table_name." WHERE id ='".mysqli_real_escape_string($this->link, $id)."'");
+        if($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    /**
+     * The function is called every once in a while in order to clean out (delete) old 
+     * records in the session data store. More specifically, the frequency in which this function 
+     * is called is determined by two configuration directives, session.gc_probability and 
+     * session.gc_divisor. The default values for these are 1  and 1000, respectively, which 
+     * means there is a 1 in 1000 (0.1%) chance for this function to be called per session initialization.
+     *
+     * Because the function keeps the timestamp of the last access in the access column 
+     * for each record, this can be used to determine which records to delete. PHP passes the 
+     * maximum number of seconds allowed before a session is to be considered expired:
+     */
+     /*
+        Logger::debug("Session gc - max = $max_session_lifetime");
+
+		$old = time() - $max_session_lifetime;
+	 	$old = mysqli_real_escape_string($old);
+
+		return DatabaseManager::submitQuery("DELETE FROM " . self::$table_name . " WHERE access < '$old'");
+     */
+    
+    public function gc($maxlifetime) {
+        $result = mysqli_query($this->link, "DELETE FROM ".$this->table_name." WHERE (UNIX_TIMESTAMP(access) < (UNIX_TIMESTAMP() - ".mysqli_real_escape_string($this->link, $maxlifetime)."))");
+        if($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    public function create_sid() {
+         $length = 32;
+
+	 if (function_exists('random_bytes')) {
+	    return bin2hex(random_bytes($length));
+	 }
+	 if (function_exists('mcrypt_create_iv')) {
+	    return bin2hex(mcrypt_create_iv($length, MCRYPT_DEV_URANDOM));
+	 }
+	 if (function_exists('openssl_random_pseudo_bytes')) {
+	    return bin2hex(openssl_random_pseudo_bytes($length));
+	 }
+
+	 $res = '';
+	 while (strlen($res) < $lenght) {
+	    $res = $res . mt_rand(0, 9);
+	 }
+	 return $res;
+    }
+    
+    public function __destruct() {
+    	//it would be good place for closing the opened link to the DB.
+    }
+}
+
 class Session {
 
 	private static $session_started_flag = false;
-			
-	private static $table_name = "lza_Sessions";
 	
 	/** 
 	* Flag to determine if we should use the database to store sessions. This must be set *before* the init 
@@ -57,29 +263,141 @@ class Session {
 	* Initialize the session
 	* @param $use_db Flag to determine if we should use the database to store sessions.
 	*/
-	public static function init($use_db=false){	
+	public static function init($use_db=false) {
 	
+		ini_set('session.use_strict_mode', 1);
+		
 		self::$use_db = $use_db;
 		
-		if (!self::$session_started_flag){
+		if (!self::$session_started_flag) {
 		
-			//Logger::debug("Setting up Sesion");
+			//Logger::debug("Setting up Sesion");			
 									
 			self::$session_started_flag = true;
 				
-			if ($use_db){	
-				session_set_save_handler(
-					"Session::onSessionOpen", 
-					"Session::onSessionClose",
-					"Session::onSessionRead",
-					"Session::onSessionWrite",
-					"Session::onSessionDestroy",
-					"Session::onSessionGC");
+			if ($use_db) {
+				
+				$handler = new SysSession();
+				
+				session_set_save_handler($handler, true);
    			}
    			
 			session_start();
+			
+			if ($use_db) {
+				self::check();
+			}
 		}
         		
+	}
+	
+	// //////////////////////////////////////////////////////////////////////////////////////
+	
+	public static function dbFlagStarted() {
+	
+		if (!self::$session_started_flag) {
+			self::init(self::$use_db);
+		}
+		
+		return self::$session_started_flag;
+	}
+	
+	private static function destroy() {
+		session_destroy();
+		self::init(self::$use_db);
+	}
+	
+	public static function logout() {
+		self::clear('access');
+		self::destroy();		
+	}
+	
+	private static function check() {
+		
+		if (self::exists('access')) {
+		
+			$access = self::get('access');
+			$result = DatabaseManager::submitQuery("SELECT id, nickname, status FROM lza_users WHERE id = " . (int)$access['id'] );
+			
+			if (mysqli_num_rows($result)) {
+	            		$record = mysqli_fetch_assoc($result);
+	            		
+	            		if ($record['status'] == 0) {
+					self::logout();
+					header("Location: index.php?response=Deactivated user account.");
+					exit();
+				}
+				
+				if ($access['active'] < (time() - 900)) {
+					self::logout();
+					header("Location: index.php?response=Logged out because of being idle.");
+					exit();
+				}
+				
+				self::clear('access');
+				self::set('access', array(
+			    				'id' => $record['id'], 
+			    				'user' => $record['nickname'],
+			    				'status' => $record['status'], 
+			    				'active' => time())
+			    	);
+	        	}	
+		}
+	}
+	
+	public static function recreate($id = null) {
+		
+		// Session ID must be regenerated when
+		//  - User logged in (+)
+		//  - User logged out (+)
+		//  - Certain period has passed (-)
+		
+		if (!self::$session_started_flag) {
+			self::init(self::$use_db);
+		}
+		
+		$sid = session_create_id('custom-');
+		
+		if(self::$use_db && $id != null) {
+		
+			$result = DatabaseManager::submitQuery("SELECT id, nickname, status FROM lza_users WHERE id = " . (int)$id);
+			
+			if (mysqli_num_rows($result)) {
+	            		$record = mysqli_fetch_assoc($result);
+	            		
+	            		if ($record['status'] == 0) {
+					self::logout();
+					header("Location: index.php?response=Deactivated user account.");
+					exit();
+				}
+				
+				if (self::exists('access')) {
+					$access = self::get('access');
+				
+					if ($access['active'] < (time() - 900)) {
+						self::logout();
+						header("Location: index.php?response=Logged out because of being idle.");
+						exit();
+					}
+					self::clear('access');
+				}
+				
+				self::set('access', array(
+			    				'id' => $record['id'], 
+			    				'user' => $record['nickname'],
+			    				'status' => $record['status'], 
+			    				'active' => time())
+			    	);
+	        	}			
+		}
+		
+		session_commit();
+		
+		ini_set('session.use_strict_mode', 0);		
+		
+		session_id($sid);
+		
+		session_start();
 	}
 	
 	// //////////////////////////////////////////////////////////////////////////////////////
@@ -87,12 +405,7 @@ class Session {
 	/**
 	* Set a variable into the session
 	*/
-	public static function set($name, $val){
-		
-		if (!self::$session_started_flag) {
-			global $wpdb;
-			self::init($wpdb);
-		}
+	public static function set($name, $val) {
 		
 		$_SESSION[$name] = $val;
 	}
@@ -103,12 +416,7 @@ class Session {
 	* Get a variable from the session, returns null if it doesn't exist
 	* and logs a warning with the Logger
 	*/
-	public static function get($name){
-		
-		if (!self::$session_started_flag) {
-			global $wpdb;
-			self::init($wpdb);
-		}
+	public static function get($name) {
 		
 		if(isset($_SESSION[$name])) 
 			return $_SESSION[$name];
@@ -123,13 +431,8 @@ class Session {
 	/**
 	* Clear a variable in the session
 	*/
-	public static function clear($name){
+	public static function clear($name) {
 		
-		if (!self::$session_started_flag) {
-			global $wpdb;
-			self::init($wpdb);
-		}
-				
 		if(isset($_SESSION[$name])) unset($_SESSION[$name]);
 	}
 
@@ -138,13 +441,8 @@ class Session {
 	/**
 	* Tests whether a variable is in the session (return true if it is)
 	*/
-	public static function exists($name){	
+	public static function exists($name) {	
 		
-		if (!self::$session_started_flag) {
-			global $wpdb;
-			self::init($wpdb);
-		}
-			
 		if(isset($_SESSION[$name])) return true; 			
 		return false;
 	}
@@ -157,141 +455,10 @@ class Session {
 	//
 	// //////////////////////////////////////////////////////////////////////////////////////
 	
-	private static function connect(){	
+	private static function connect() {
+		DatabaseManager::connect();	
 	}
 	
-	// //////////////////////////////////////////////////////////////////////////////////////
-	//
-	// Session Handler callbacks
-	//
-	// //////////////////////////////////////////////////////////////////////////////////////
-	
-	/**
-	* The onSessionOpen() and onSessionClose() functions are closely related. These are used to 
-	* open the session data store and close it, respectively. If you are storing sessions in 
-	* the filesystem, these functions open and close files (and you likely need to use a global 
-	* variable for the file handler, so that the other session functions can use it).
-	*/
-	public static function onSessionOpen($save_path, $session_name) {
-		self::connect();
-	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-
-	/**
-	* The onSessionOpen() and onSessionClose() functions are closely related. These are used to 
-	* open the session data store and close it, respectively. If you are storing sessions in 
-	* the filesystem, these functions open and close files (and you likely need to use a global 
-	* variable for the file handler, so that the other session functions can use it).
-	*/
-	public static function onSessionClose() {
-	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-
-	/**
-	* The onSessionRead() function is called whenever PHP needs to read the session data. This takes 
-	* place immediately after _open(), and both are a direct result of your use of session_start().
-	*
-	* PHP passes this function the session identifier, as the following example demonstrates:
-	*/
-	public static function onSessionRead($session_id){
-				
-		//Logger::debug("Session $session_id read");
-    	$id = mysql_real_escape_string($session_id);
-		
-	    if ($result = DatabaseManager::submitQuery("SELECT data FROM " . self::$table_name . " WHERE id = '$id'")) {
-	        if (mysql_num_rows($result)) {
-	            $record = mysql_fetch_assoc($result);
-	            return $record['data'];
-	        }
-	    }
-	 
-	    return '';
-		
-		//global $wpdb;
-		//$sql = self::$wpdb->prepare("SELECT data FROM " . self::$table_name . " WHERE id = %s",  $session_id ); 		
-		//return self::$wpdb->query($sql);		
-				
-	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-	
-	/**
-	* The onSessionWrite() function is called whenever PHP needs to write the session data. This takes 
-	* place at the very end of the script.
-	*
-	* PHP passes this function the session identifier and the session data. You don't need to 
-	* worry with the format of the data - PHP serializes it, so that you can treat it like a string. 
-	* However, PHP does not modify it beyond this, so you want to properly escape it before using 
-	* it in a query:
-	*/
-	public static function onSessionWrite($session_id, $data){
-		
-		//Logger::debug("Session $session_id write ($data)");
-		
-	    $access = time();
- 
-    	$id = mysql_real_escape_string($session_id);
-	    $access = mysql_real_escape_string($access);
-    	$data = mysql_real_escape_string($data);
- 		
-		return DatabaseManager::submitQuery("REPLACE INTO " . self::$table_name . " VALUES ('$id', '$access', '$data')");
-		
- 		//global $wpdb;
-		//$sql = self::$wpdb->prepare("REPLACE INTO " . self::$table_name . " VALUES  (%s, %d, %s)",  $session_id,  time(), $data ); 		
-		//return self::$wpdb->query($sql);		
-	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-
-	/**
-	* The onSessionDestroy($session_id) function is called whenever PHP needs to destroy all session data associated 
-	* with a specific session identifier. An obvious example is when you call session__destroy().
-	*
-	* PHP passes the session identifier to the function:
-	*/
-	public static function onSessionDestroy($session_id){
-		
-		//Logger::debug("Session destroy");
-
-	    $id = mysql_real_escape_string($session_id);
- 
-		return DatabaseManager::submitQuery("DELETE FROM " . self::$table_name . " WHERE id = '$id'");
-
-
- 		//global $wpdb;
-		//$sql = self::$wpdb->prepare("DELETE FROM " . self::$table_name . " WHERE id = %d",  $session_id); 		
-		//self::$wpdb->query($sql);		
-	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-	
-	/**
-	* The Session::onSessionGC() function is called every once in a while in order to clean out (delete) old 
-	* records in the session data store. More specifically, the frequency in which this function 
-	* is called is determined by two configuration directives, session.gc_probability and 
-	* session.gc_divisor. The default values for these are 1  and 1000, respectively, which 
-	* means there is a 1 in 1000 (0.1%) chance for this function to be called per session initialization.
-	*
-	* Because the onSessionWrite() function keeps the timestamp of the last access in the access column 
-	* for each record, this can be used to determine which records to delete. PHP passes the 
-	* maximum number of seconds allowed before a session is to be considered expired:
-	*/
-	public static function onSessionGC($max_session_lifetime){
-		
-		Logger::debug("Session gc - max = $max_session_lifetime");
-
-		$old = time() - $max_session_lifetime;
-	 	$old = mysql_real_escape_string($old);
-
-		return DatabaseManager::submitQuery("DELETE FROM " . self::$table_name . " WHERE access < '$old'");
-
- 		//global $wpdb;
-		//$sql = self::$wpdb->prepare("DELETE FROM " . self::$table_name . " WHERE access < %d",  $old); 		
-		//self::$wpdb->query($sql);				
-	}
-
 	// //////////////////////////////////////////////////////////////////////////////////////	
 	// 
 	// Logging functions (for debug use only)
@@ -383,22 +550,24 @@ class Session {
 	       
 	}
 
-	// //////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////
+
 /*
 	public static function logMessage($message, $level, $class, $function){
 	
 		if (!self::$session_started_flag){
-			self::init();
+			self::init(self::$use_db);
 		}
 		
-    	$message = mysql_real_escape_string($message);
-	    $level = mysql_real_escape_string($level);
+    	$message = mysqli_real_escape_string($message);
+	    $level = mysqli_real_escape_string($level);
  		
-		return mysql_query("INSERT INTO apollo_Log (message, level, class, function) VALUES  ('$message', '$level', '$class', '$function')", self::$connection);
+		return mysqli_query(self::$connection, "INSERT INTO lza_log (message, level, class, function) VALUES  ('$message', '$level', '$class', '$function')");
 		
 	}
 	*/
-	// //////////////////////////////////////////////////////////////////////////////////////
+	
+	/////////////////////////////////////////////////////////////////////////////////////////
 
 
 	/**
@@ -406,7 +575,7 @@ class Session {
 	* contains the field values - with html new line tags
 	*/
 	public static function toString(){
-		if (!self::$session_started_flag) self::init();
+		if (!self::$session_started_flag) self::init(self::$use_db);
 		
 		$temp = '';
 		
