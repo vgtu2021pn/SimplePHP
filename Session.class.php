@@ -309,7 +309,9 @@ class Session {
 	
 	public static function logout() {
 		self::clear('access');
+		if (session_status() == PHP_SESSION_ACTIVE) {
 		self::destroy();		
+		}
 	}
 	
 	private static function check() {
