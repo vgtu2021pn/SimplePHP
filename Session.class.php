@@ -57,6 +57,10 @@
 * @author Mike Pritchard (mike@adastrasystems.com)
 * @since July 6th, 2006
 */
+/**
+* post scriptum.
+* Ad Astra Systems code were rewriten in about ~60-70 percent grand total and (or) most of their code too old for today's PHP version.
+*/
 class SysSession implements SessionHandlerInterface {
 
     private $link;
