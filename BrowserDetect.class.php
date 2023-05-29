@@ -6,7 +6,6 @@
  * @version 1.6
  * @package PegasusPHP
  * @see http://chrisschuld.com/projects/browser-php-detecting-a-users-browser-from-php
- * @see https://github.com/cbschuld/Browser.php
  * 
  * Copyright (C) 2008-2009 Chris Schuld  (chris@chrisschuld.com)
  *
