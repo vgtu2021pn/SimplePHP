@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
     $string_username = preg_replace("/[^a-z0-9]/i", "", $_POST["username"]);
     //for other letters would be possible to use function mb_eregi_replace($pattern, $replacement, $string);
     //for other way would be possibe to use function filter_var();
-    if(strlen($string_username) < 6) {
+    if(strlen($string_username) < 3) {
     	$success = false;
     	$html_error[] = 'Too short in numbers of correct letters of the Username.';
     }
@@ -57,7 +57,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
     $string_password = $_POST["password"];
     
     if(empty($string_password)) {
-    	$string_password = $string_username;
+	$today = getdate();
+	$today_year = settype($today['year'], 'string');
+    	$string_password = $string_username.$today_year;
     }
     
     if(strlen($string_password) < 6) {
@@ -81,13 +83,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
     
     $data = DatabaseManager::getSingleResult("SELECT id, nickname, status FROM lza_users WHERE nickname = %s;", $process_nickname );
     
-    if(is_array($data) && !empty($data)) {
+if(is_array($data) && !empty($data)) {
     	//$success = false;//recommendation only
     	$html_error[] = 'This Name is already in use. Misunderstanding can\'t be avoided.';
     }
     
     unset($data);
-    
+     
+    //  **
+    //  * Policy
+    // ** 
+if(!isset($_POST["policy"]) && empty($_POST["policy"])) {
+	$success = false;
+	$html_error[] = 'The User should not be created, if he does not accept Security and Privacy Policies of the Information System. If Security Policy is not defined, then communicate with Security Authority of this Information System (if there are no such entity, then Owner of the Information System is directly responsible). If Privacy Policy is not defined, then communicate with Data Protection Authority of this Information System (if there are no such entity, then Owner of the Information System is directly responsible).';
+    }
     //  **
     //  * Push Username, Password and Nickname to the database.
     //  * Requirements. @Var success eq to TRUE
@@ -128,14 +137,17 @@ padding: 8px;
 tr:nth-child(even) {
 background-color: #dddddd;
 }
+#required {
+color: red;
+}
 .line-up {
 position: relative;
-float:left;
+float: left;
 display: inline-block;
 padding-left: 20px;
 }
 .clear {
-clear:both;
+clear: both;
 }
 .err {
 color: #191970;
@@ -287,19 +299,24 @@ echo <<<EOT
 <h1>User Creation</h1>
 <table style="width:100%">
 <tr>
-<td>Username of the Account</td>
+<td><span id="required">&#42;</span> Username of the Account</td>
 <td><input type="text" name="username" value="" /></td>
-<td>(required, accepting at minimum 6 (six) upper and lowercase Latin letters, and numbers only)</td>
+<td>(accepting at minimum 6 (six) upper and lowercase Latin/English letters, and numbers only)</td>
 </tr>
 <tr>
 <td>Password of the Account</td>
 <td><input type="password" name="password" autocomplete="off" value="" /></td>
-<td>(the same as Username, if empty)</td>
+<td>(the same as concatinated string from Username and Year value(s), if empty)</td>
 </tr>
 <tr>
 <td>Identity Name of the User</td>
 <td><input type="text" name="nickname" value="" /></td>
 <td>(the same as Username, if empty)</td>
+</tr>
+<tr>
+<td><span id="required">&#42;</span> Accepting Security, Cybersecurity and Privacy Policies of the Information System</td>
+<td><input type="checkbox" name="policy" /></td>
+<td>(if checked, then the User has to be instructed in (Cyber) Security and Privacy Policies accordingly, which are related to this Information System for the first time and each year until the User Account is Active.)</td>
 </tr>
 EOT;
 
