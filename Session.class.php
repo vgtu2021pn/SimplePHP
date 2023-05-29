@@ -59,7 +59,7 @@
 */
 /**
 * post scriptum.
-* Ad Astra Systems code were rewriten in about ~60-70 percent grand total and (or) most of their code too old for today's PHP version.
+* Ad Astra Systems code were rewriten in about ~25 percent grand total and (or) most of their code too old for today's PHP version.
 */
 class SysSession implements SessionHandlerInterface {
 
