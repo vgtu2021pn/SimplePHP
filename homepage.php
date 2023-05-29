@@ -58,8 +58,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
     
     if(empty($string_password)) {
 	$today = getdate();
-	$today_year = settype($today['year'], 'string');
-    	$string_password = $string_username.$today_year;
+	$today_year = $today['year'];
+    	$string_password = (string)$string_username.(string)$today_year;
     }
     
     if(strlen($string_password) < 6) {
