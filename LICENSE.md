@@ -1,4 +1,5 @@
 Dual MIT/GPL License
+
 Author: PolVilniusTech
 
 License Docs:
