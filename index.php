@@ -3,13 +3,13 @@
 include_once('Session.class.php');
 include_once('DatabaseManager.class.php');
 include_once('Logger.class.php');
-include_once('BrowserDetect.class.php');
+include_once('Browser.class.php');
 include_once('CommandHelper.class.php');
 
 // README -->
 Session::init(true);
 
-DatabaseManager::connect();	
+DatabaseManager::connect();
 
 Logger::setLevel(Logger::$DEBUG);
 
@@ -21,8 +21,8 @@ CommandHelper::init();
 // <-- README
 
 $html_browser = '';
-$browser = new BrowserDetect();
-if( $browser->getBrowser() == BrowserDetect::BROWSER_FIREFOX && $browser->getVersion() >= 2 ) {
+$browser = new Browser();
+if( $browser->getBrowser() == Browser::BROWSER_FIREFOX && $browser->getVersion() >= 2 ) {
 	$html_browser = 'You have FireFox version 2 or greater.';
 }
 else {
@@ -31,37 +31,31 @@ else {
 
 $html_response = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["login"])) {
-      
-    $string_username = DatabaseManager::make_sql_safe(trim($_POST["username"]));
-    $string_password = DatabaseManager::make_sql_safe(md5(trim($_POST["password"])));
-    
-    $data = DatabaseManager::getSingleResult("SELECT id, nickname, status FROM lza_users WHERE username = %s AND password = %s;", $string_username, $string_password );
-    
-    if(is_array($data) && !empty($data)) {
-    	$id = $data['id'];
-    	
-    	Session::logout();
-	
-	if($id) Session::recreate($id);
-    	
-    	Session::set('access', array(
-    				'id' => $id, 
-    				'user' => $data['nickname'],
-    				'status' => $data['status'], 
-    				'active' => time())
-    	);
-    	header("Location: homepage.php?user=".(int)$data['id']);
-    }
-    else {
-    	$html_response = "Wrong username or password.";
-    }
+	$string_username = DatabaseManager::make_sql_safe(trim($_POST["username"]));
+	$string_password = DatabaseManager::make_sql_safe(md5(trim($_POST["password"])));
+	$data = DatabaseManager::getSingleResult("SELECT id, nickname, status FROM lza_users WHERE username = %s AND password = %s;", $string_username, $string_password );
+	if(is_array($data) && !empty($data)) {
+    		$id = $data['id'];
+    		Session::logout();
+		if($id) Session::recreate($id);
+		Session::set('access', array(
+			'id' => $id,
+			'user' => $data['nickname'],
+			'status' => $data['status'],
+			'active' => time())
+		);
+		header("Location: homepage.php?user=".(int)$data['id']);
+	}
+	else {
+		$html_response = "Wrong username or password.";
+	}
 }
 
-/*
- * Try to change URL address: 
+/**
+ * Try to change URL address:
  * /index.php?response=hello world
  * /index.php?response=<u>hello world</u>
- */
+ **/
 $para = CommandHelper::getPara('response', false, CommandHelper::$PARA_TYPE_STRING);
 
 if($para) {
@@ -81,15 +75,12 @@ $para = CommandHelper::getPara('logout', false, CommandHelper::$PARA_TYPE_NUMERI
 
 if($para == 1) {
 	$html_response = "Logged out.";
-	
 	if (Session::exists('access')) {
 		$val = Session::get('access');
 		$id = (int)$val['id'];
 		unset($val);
 	}
-	
 	Session::logout();
-	
 	if($id) Session::recreate($id);
 }
 
@@ -133,7 +124,7 @@ echo <<<EOT
 	    border-radius:3px;
 	    text-shadow:0 -1px rgba(0,0,0,0.3);
 	    position:relative
-	}	  
+	}
 	.login-box h1 {
 	    float: left;
 	    font-size: 40px;
@@ -144,7 +135,7 @@ echo <<<EOT
 	.centered {
 		float:none;
 		margin:0 auto;
-	}	  
+	}
 	.textbox {
 	    width: 100%;
 	    overflow: hidden;
@@ -152,12 +143,12 @@ echo <<<EOT
 	    padding: 8px 0;
 	    margin: 8px 0;
 	    border-bottom: 1px solid #191970;
-	}	  
+	}
 	.fa {
 	    width: px;
 	    float: left;
 	    text-align: center;
-	}	  
+	}
 	.textbox input {
 	    border: none;
 	    outline: none;
@@ -165,7 +156,7 @@ echo <<<EOT
 	    font-size: 18px;
 	    float: left;
 	    margin: 0 10px;
-	}	  
+	}
 	.button {
 	    width: 100%;
 	    padding: 8px;
@@ -185,24 +176,20 @@ echo <<<EOT
 		<span style="font-weight:600">Note.</span><span style="font-weight:300"> {$html_browser}</span>
 		<span style="font-weight:600">Note.</span><span style="font-weight:300"> {$html_response}</span>
 	</div>
-	
 </div>
 <form action="index.php" method="post">
         <div class="login-box">
             <h1>Login</h1>
-  
             <div class="textbox">
                 <i class="glyphicon glyphicon-user" aria-hidden="true"></i>
                 <input type="text" placeholder="Username"
                          name="username" value="">
             </div>
-  
             <div class="textbox">
                 <i class="glyphicon glyphicon-lock" aria-hidden="true"></i>
                 <input type="password" placeholder="Password"
                          name="password" autocomplete="off" value="">
             </div>
-  
             <input class="button" type="submit"
                      name="login" value="Sign In">
         </div>
@@ -212,7 +199,7 @@ echo <<<EOT
 EOT;
 
 /*
-//To trace the errors 
+//To trace the errors
 try {
 	echo (1/5);
 	echo "\n";

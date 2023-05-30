@@ -3,13 +3,13 @@
 include_once('Session.class.php');
 include_once('DatabaseManager.class.php');
 include_once('Logger.class.php');
-include_once('BrowserDetect.class.php');
+include_once('Browser.class.php');
 include_once('CommandHelper.class.php');
 
 // README -->
 Session::init(true);
 
-DatabaseManager::connect();	
+DatabaseManager::connect();
 
 Logger::setLevel(Logger::$DEBUG);
 
@@ -28,9 +28,9 @@ $html_error = array();
 $success = true;
 if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
       
-    // **
-    //  * Username
-    //  ** 
+    /**
+     * Username
+     **/
     
     $string_username = preg_replace("/[^a-z0-9]/i", "", $_POST["username"]);
     //for other letters would be possible to use function mb_eregi_replace($pattern, $replacement, $string);
@@ -50,9 +50,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
     
     unset($data);
     
-    //  **
-    //  * Password
-    // ** 
+    /**
+     * Password
+     **/
     
     $string_password = $_POST["password"];
     
@@ -69,9 +69,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" and isset($_POST["proceed"])) {
     
     $process_password = DatabaseManager::make_sql_safe(md5(trim($string_password)));
     
-    // **
-    //  * Nickname
-    //  ** 
+    /**
+     * Nickname
+     **/
     
     $string_nickname = $_POST["nickname"];
     
@@ -90,17 +90,17 @@ if(is_array($data) && !empty($data)) {
     
     unset($data);
      
-    //  **
-    //  * Policy
-    // ** 
+    /**
+     * Policy
+     **/
 if(!isset($_POST["policy"]) && empty($_POST["policy"])) {
 	$success = false;
 	$html_error[] = 'The User should not be created, if he does not accept Security and Privacy Policies of the Information System. If Security Policy is not defined, then communicate with Security Authority of this Information System (if there are no such entity, then Owner of the Information System is directly responsible). If Privacy Policy is not defined, then communicate with Data Protection Authority of this Information System (if there are no such entity, then Owner of the Information System is directly responsible).';
     }
-    //  **
-    //  * Push Username, Password and Nickname to the database.
-    //  * Requirements. @Var success eq to TRUE
-    // ** 
+    /**
+     * Push Username, Password and Nickname to the database.
+     * Requirements. @Var success eq to TRUE
+     **/
     
     if($success == true) {
     	$process_status = 1; //by default
@@ -161,7 +161,7 @@ color: #191970;
 }
 i {
 padding-right: 10px;
-padding-left: 10px; 
+padding-left: 10px;
 border-style: solid;
 border-width: .5px;
 }
@@ -212,7 +212,7 @@ echo <<<EOT
 <td colspan=8>No data.</td>
 </tr>
 EOT;
-		
+
 }
 else {
 
@@ -262,7 +262,7 @@ echo <<<EOT
 <td colspan=5>No data.</td>
 </tr>
 EOT;
-		
+
 }
 else {
 
@@ -348,14 +348,8 @@ echo <<<EOT
 </table>
 </div>
 </form>
-
-
-
-
-
-
 EOT;
- 	
+
 echo <<<EOT
 </body>
 </html>

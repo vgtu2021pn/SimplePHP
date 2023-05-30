@@ -1,5 +1,11 @@
 <?php
 /**
+* Following comment is a lie:
+* "Requires: a slighlty modified version of Garry Whites' browser detection clas>
+* for the optional init method, if you don't use this then you don't need this" >
+* For dual MIT/GPL licence.
+*/
+/**
 * *******************************************************************
 *
 * Copyright (C) 2011 by Ad Astra Systems, LLC
@@ -65,13 +71,13 @@ class CommandHelper {
 	
 	public static function init(){
 	
-		$browser = new BrowserDetect();
+		$browser = new Browser();
 			 	
 		// Turn off gzip for IE6 or lower
 		$browser_name = $browser->getBrowser();
 		$browser_version = $browser->getVersion();
 		
-	    if ($browser_name == BrowserDetect::BROWSER_IE && $browser_version < 7) {
+	    if ($browser_name == Browser::BROWSER_IE && $browser_version < 7) {
 	    	self::$ZIP_MESSAGE = false;
 		}
 		else {
@@ -110,7 +116,7 @@ class CommandHelper {
 	            
 	            case self::$PARA_TYPE_NUMERIC :
 	            	$typestr = 'numeric';
-	                if (is_numeric($val)) {	                	
+	                if (is_numeric($val)) {
 	                	return $val;
 	                }
 	                break;
@@ -128,7 +134,7 @@ class CommandHelper {
 	                	return $val;
 	                }
 	                break;
-	
+		
 	            case self::$PARA_TYPE_STRING :
 	                $typestr = 'string';
 	                if (is_string($val)) {
@@ -161,14 +167,14 @@ class CommandHelper {
 	            	$typestr = 'array';
 	            	if (is_array($val)) {
 	            		return $val;
-	            	}	            	
+	            	}
 	                break;
 	                
 	            case self::$PARA_TYPE_OBJECT :
 	            	$typestr = 'object';
 	            	if (is_object($val)) {
 	            		return $val;
-	            	}            	
+	            	}
 	                break;
 	        }
 	        
@@ -207,7 +213,7 @@ class CommandHelper {
 	}
 	
 	// ///////////////////////////////////////////////////////////////////////////////////////
-		
+	
 	/**
 	* Send a normal text (string) message back to the client.
 	*/
@@ -215,8 +221,8 @@ class CommandHelper {
 	
 		if (self::$ZIP_MESSAGE) {
 			$msg = gzencode($msg);
-			header("Content-Encoding: gzip"); 
-			header("Content-Type: text/plain"); 		
+			header("Content-Encoding: gzip");
+			header("Content-Type: text/plain");
 		}
 		
 		print($msg);
@@ -234,14 +240,13 @@ class CommandHelper {
 	
 		if (self::$ZIP_MESSAGE) {
 			$msg = gzencode(json_encode($data));
-			header("Content-Encoding: gzip"); 
-			header("Content-Type: text/plain"); 		
+			header("Content-Encoding: gzip");
+			header("Content-Type: text/plain");
 		}
 		else {
 			$msg = json_encode($data);
-		}	
-		
+		}
 		print($msg);
-	}	
+	}
 }
 ?>

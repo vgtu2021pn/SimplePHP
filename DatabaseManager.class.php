@@ -1,5 +1,5 @@
 <?php
-
+date_default_timezone_set('UTC');
 /**
 * *******************************************************************
 *
@@ -38,9 +38,9 @@ class DatabaseManager {
     /** Name of MySQL database */
     private static $databaseName = "company";
     /** Username of user with admin rights to database */
-    private static $username = "company";
+    private static $username = "manty";
     /** Password of user with admin rights to database */
-    private static $password = "company";
+    private static $password = "ačiū";
     /** verbose flag, if true debug data is dumped */
     private static $verbose = false;
     /**
@@ -73,6 +73,10 @@ class DatabaseManager {
 
     public static function setVerbose($newVal) {
         self::$verbose = $newVal;
+    }
+
+    public static function getStatus() {
+        return (self::$currentCon !== NULL)?1:0;
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -144,7 +148,6 @@ class DatabaseManager {
                 Logger::fatal("Connection to MySQL database '$host' failed with username " . self::$username . "!");
             }
         }
-        
         // By default, set connection to the master DB
         self::useMaster();
     }
@@ -204,7 +207,7 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function freeResult($query_result) {
-        if ($query_result != false || $query_result != NULL) {        
+        if ($query_result != false || $query_result != NULL) {
             try {
                 @mysqli_free_result($query_result);
             } catch (Exception $e) {
@@ -231,7 +234,6 @@ class DatabaseManager {
 
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
-		
         self::useSlave();
 
         $results = DatabaseManager::internalQuery($sql);
@@ -299,7 +301,6 @@ class DatabaseManager {
         if (!$results || mysqli_num_rows($results) == 0) {
             return null;
         }
-        
         $row = mysqli_fetch_assoc($result);
         mysqli_free_result($results);
 
@@ -312,28 +313,20 @@ class DatabaseManager {
      * Get all the results for a query as an associative array, returns null if no results found
      */
     public static function getResults($sql) {
-
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
-
-        self::useSlave();
-
-        $results = DatabaseManager::internalQuery($sql);
-
-        if (!$results || mysqli_num_rows($results) == 0) {
+	self::useSlave();
+	$results = DatabaseManager::internalQuery($sql);
+	if (!$results || mysqli_num_rows($results) == 0) {
             return null;
         }
-
-        $data = array();
-
-        // Build the output data
+	$data = array();
+	// Build the output data
         while ($row = mysqli_fetch_assoc($results)) {
             $data[] = $row;
         }
-
-        mysqli_free_result($results);
-
-        return $data;
+	mysqli_free_result($results);
+	return $data;
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -391,7 +384,6 @@ class DatabaseManager {
      * @return null|string Sanitized query string
      */
     public static function prepare($query) { // ( $query, *$args )
-        
         $args = func_get_args();
 
         array_shift($args);
@@ -407,7 +399,17 @@ class DatabaseManager {
 
         for ($i = 0; $i < count($args); $i++) {
 	        if (self::$currentCon == NULL) {
-	        	Logger::debug("Null connections " . self::$currentCon);
+			$datetime = new DateTime('now', new DateTimeZone('Europe/Athens'));
+			$date = new IntlDateFormatter(
+                        'en_US',
+                        IntlDateFormatter::FULL,
+                        IntlDateFormatter::FULL,
+                        'Europe/Athens',
+                        IntlDateFormatter::GREGORIAN,
+                        'YYYY-MM-dd'
+                	);
+                	$now = $date->format($datetime);
+			Logger::debug("Null connections " . $now);
 	        	self::connect();
 	        }
             $args[$i] = mysqli_real_escape_string(self::$currentCon, $args[$i]);
@@ -417,7 +419,7 @@ class DatabaseManager {
 
         return @vsprintf($query, $args);
     }
-    
+
     // //////////////////////////////////////////////////////////////////////////////////////
     //
     // Private methods
@@ -441,8 +443,7 @@ class DatabaseManager {
      * @return null|string Sanitized query string
      */
     private static function prepareQuery($query, $args) { // ( $query, *$args )
-        
-        //$args = func_get_args();
+	//$args = func_get_args();
 
         array_shift($args);
 
@@ -457,7 +458,17 @@ class DatabaseManager {
 
         for ($i = 0; $i < count($args); $i++) {
 	        if (self::$currentCon == NULL) {
-	        	Logger::debug("Null connections " . self::$currentCon);
+			$datetime = new DateTime('now', new DateTimeZone('Europe/Athens'));
+			$date = new IntlDateFormatter(
+                        'en_US',
+                        IntlDateFormatter::FULL,
+                        IntlDateFormatter::FULL,
+                        'Europe/Athens',
+                        IntlDateFormatter::GREGORIAN,
+                        'YYYY-MM-dd'
+                	);
+                	$now = $date->format($datetime);
+	        	Logger::debug("Null connections " . $now);
 	        	self::connect();
 	        }
             $args[$i] = mysqli_real_escape_string(self::$currentCon, $args[$i]);
@@ -494,7 +505,7 @@ class DatabaseManager {
         //	Logger::debug("Database Query = [$query] ");
 
         return $result;
-    }    
+    }
     
     // //////////////////////////////////////////////////////////////////////////////////////
 
@@ -513,18 +524,33 @@ class DatabaseManager {
 
     /** Use the master connections */
     private static function useMaster() {
-        self::$currentCon = self::$connections['master'];
+        if (isset(self::$connections['master'])) {
+		self::$currentCon = self::$connections['master'];
+	}
+	if (self::$currentCon == NULL) {
+		$datetime = new DateTime('now', new DateTimeZone('Europe/Athens'));
+		$date = new IntlDateFormatter(
+			'en_US',
+			IntlDateFormatter::FULL,
+			IntlDateFormatter::FULL,
+			'Europe/Athens',
+			IntlDateFormatter::GREGORIAN,
+			'YYYY-MM-dd'
+		);
+		$now = $date->format($datetime);
+		Logger::debug("Null connection " . $now);
+	}
     }
-    
+
     public static function logMessage($no, $message, $file, $line) {
-		
+	if (self::$currentCon == NULL)
+            self::connect();
+
 	if(Session::dbFlagStarted()) {
-	
 		$no = (int)$no;
 		$message = mysqli_real_escape_string(self::$currentCon, $message);
 		$file = mysqli_real_escape_string(self::$currentCon, $file);
 		$line = (int)$line;
-	 		
 	 	return DatabaseManager::submitQuery("INSERT INTO lza_log (log_time, no, message, file, line) VALUES (NOW(), '$no', '$message', '$file', '$line')");
  	}
  	else {

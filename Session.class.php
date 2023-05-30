@@ -64,21 +64,14 @@
 class SysSession implements SessionHandlerInterface {
 
     private $link;
-    
-    private $table_name = "lza_sessions";    
-
+    private $table_name = "lza_sessions";
     private $databaseURL = "localhost";
-
     private $databaseName = "company";
-
-    private $username = "company";
-
-    private $password = "company";
-   
+    private $username = "manty";
+    private $password = "ačiū";
     /*
         self::connect();
     */
-    
     public function __construct() {
     	$savePath = ini_get('session.save_path');
     	$saveHandler = ini_get('session.save_handler');
@@ -89,7 +82,6 @@ class SysSession implements SessionHandlerInterface {
 
     	//Logger::debug("Session $sidLength");
     }
-    
     public function open($savePath, $sessionName) {
         $link = mysqli_connect($this->databaseURL, $this->username, $this->password, $this->databaseName);
         if($link) {
@@ -99,22 +91,19 @@ class SysSession implements SessionHandlerInterface {
             return false;
         }
    }
-    
    /**
     * These functions are closely related. These are used to 
     * open the session data store and close it, respectively. If you are storing sessions in 
     * the filesystem, these functions open and close files (and you likely need to use a global 
     * variable for the file handler, so that the other session functions can use it).
     */
-    
     public function close() {
         mysqli_close($this->link);
         if ($this->link) {
-            return false;       	
+            return false;
     	}
         return true;
     }
-    
    /**
     * The function is called whenever PHP needs to read the session data. This takes 
     * place immediately after _open(), and both are a direct result of your use of session_start().
@@ -124,17 +113,14 @@ class SysSession implements SessionHandlerInterface {
     /*
         //Logger::debug("Session $session_id read");
     	$id = mysqli_real_escape_string($session_id);
-		
 	    if ($result = DatabaseManager::submitQuery("SELECT data FROM " . self::$table_name . " WHERE id = '$id'")) {
 	        if (mysqli_num_rows($result)) {
 	            $record = mysqli_fetch_assoc($result);
 	            return $record['data'];
 	        }
 	    }
-	 
 	    return '';
     */
-    
     public function read($id) {
         $result = mysqli_query($this->link, "SELECT data FROM ".$this->table_name." WHERE id = '".mysqli_real_escape_string($this->link, $id)."'");
         if($row = mysqli_fetch_assoc($result)) {
@@ -143,7 +129,6 @@ class SysSession implements SessionHandlerInterface {
             return "";
         }
    }
-    
    /**
     * The function is called whenever PHP needs to write the session data. This takes 
     * place at the very end of the script.
@@ -155,16 +140,12 @@ class SysSession implements SessionHandlerInterface {
     */
     /*
         //Logger::debug("Session $session_id write ($data)");
-		
 	    $access = time();
- 
     	$id = mysqli_real_escape_string($session_id);
 	    $access = mysqli_real_escape_string($access);
     	$data = mysqli_real_escape_string($data);
- 		
 		return DatabaseManager::submitQuery("REPLACE INTO " . self::$table_name . " VALUES ('$id', '$access', '$data')");
     */
-    
     public function write($id, $data) {
         $result = mysqli_query($this->link,"REPLACE INTO ".$this->table_name." VALUES ('".mysqli_real_escape_string($this->link, $id)."', NOW(), '".mysqli_real_escape_string($this->link, $data)."');");
         if($result) {
@@ -173,7 +154,6 @@ class SysSession implements SessionHandlerInterface {
             return false;
         }
     }
-    
    /**
     * The function is called whenever PHP needs to destroy all session data associated 
     * with a specific session identifier. An obvious example is when you call session__destroy().
@@ -182,12 +162,9 @@ class SysSession implements SessionHandlerInterface {
     */
     /*
         //Logger::debug("Session destroy");
-
 	    $id = mysqli_real_escape_string($session_id);
- 
 		return DatabaseManager::submitQuery("DELETE FROM " . self::$table_name . " WHERE id = '$id'");
     */
-    
     public function destroy($id) {
         $result = mysqli_query($this->link, "DELETE FROM ".$this->table_name." WHERE id ='".mysqli_real_escape_string($this->link, $id)."'");
         if($result) {
@@ -196,7 +173,6 @@ class SysSession implements SessionHandlerInterface {
             return false;
         }
     }
-    
     /**
      * The function is called every once in a while in order to clean out (delete) old 
      * records in the session data store. More specifically, the frequency in which this function 
@@ -210,13 +186,10 @@ class SysSession implements SessionHandlerInterface {
      */
      /*
         Logger::debug("Session gc - max = $max_session_lifetime");
-
 		$old = time() - $max_session_lifetime;
 	 	$old = mysqli_real_escape_string($old);
-
 		return DatabaseManager::submitQuery("DELETE FROM " . self::$table_name . " WHERE access < '$old'");
      */
-    
     public function gc($maxlifetime) {
         $result = mysqli_query($this->link, "DELETE FROM ".$this->table_name." WHERE (UNIX_TIMESTAMP(access) < (UNIX_TIMESTAMP() - ".mysqli_real_escape_string($this->link, $maxlifetime)."))");
         if($result) {
@@ -225,7 +198,6 @@ class SysSession implements SessionHandlerInterface {
             return false;
         }
     }
-    
     public function create_sid() {
          $length = 32;
 
@@ -238,14 +210,12 @@ class SysSession implements SessionHandlerInterface {
 	 if (function_exists('openssl_random_pseudo_bytes')) {
 	    return bin2hex(openssl_random_pseudo_bytes($length));
 	 }
-
 	 $res = '';
 	 while (strlen($res) < $lenght) {
 	    $res = $res . mt_rand(0, 9);
 	 }
 	 return $res;
     }
-    
     public function __destruct() {
     	//it would be good place for closing the opened link to the DB.
     }
@@ -254,132 +224,98 @@ class SysSession implements SessionHandlerInterface {
 class Session {
 
 	private static $session_started_flag = false;
-	
-	/** 
+	/**
 	* Flag to determine if we should use the database to store sessions. This must be set *before* the init 
 	* method, or any method, is called!
 	*/
 	private static $use_db = false;
-		
-	// //////////////////////////////////////////////////////////////////////////////////////
-
+	////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	* Initialize the session
 	* @param $use_db Flag to determine if we should use the database to store sessions.
 	*/
 	public static function init($use_db=false) {
-	
 		ini_set('session.use_strict_mode', 1);
-		
 		self::$use_db = $use_db;
-		
 		if (!self::$session_started_flag) {
-		
-			//Logger::debug("Setting up Sesion");			
-									
+			//Logger::debug("Setting up Sesion");
 			self::$session_started_flag = true;
-				
 			if ($use_db) {
-				
 				$handler = new SysSession();
-				
 				session_set_save_handler($handler, true);
    			}
-   			
 			session_start();
-			
 			if ($use_db) {
 				self::check();
 			}
 		}
-        		
 	}
-	
-	// //////////////////////////////////////////////////////////////////////////////////////
-	
+	////////////////////////////////////////////////////////////////////////////////////////
 	public static function dbFlagStarted() {
-	
 		if (!self::$session_started_flag) {
 			self::init(self::$use_db);
 		}
-		
 		return self::$session_started_flag;
 	}
-	
 	private static function destroy() {
 		session_destroy();
 		self::init(self::$use_db);
 	}
-	
 	public static function logout() {
 		self::clear('access');
 		if (session_status() == PHP_SESSION_ACTIVE) {
-		self::destroy();		
+			self::destroy();
 		}
 	}
-	
 	private static function check() {
-		
 		if (self::exists('access')) {
-		
 			$access = self::get('access');
+			if (DatabaseManager::getStatus() !== 1) {
+				self::connect();
+			}
 			$result = DatabaseManager::submitQuery("SELECT id, nickname, status FROM lza_users WHERE id = " . (int)$access['id'] );
-			
 			if (mysqli_num_rows($result)) {
 	            		$record = mysqli_fetch_assoc($result);
-	            		
 	            		if ($record['status'] == 0) {
 					self::logout();
-					header("Location: index.php?response=Deactivated user account.");
+					header("Location: index.php?response=Deactivated%20user%20account.");
 					exit();
 				}
-				
 				if ($access['active'] < (time() - 900)) {
 					self::logout();
-					header("Location: index.php?response=Logged out because of being idle.");
+					header("Location: index.php?response=Logged%20out%20because%20of%20being%20idle.");
 					exit();
 				}
-				
 				self::clear('access');
 				self::set('access', array(
-			    				'id' => $record['id'], 
+			    				'id' => $record['id'],
 			    				'user' => $record['nickname'],
-			    				'status' => $record['status'], 
+			    				'status' => $record['status'],
 			    				'active' => time())
 			    	);
-	        	}	
+	        	}
 		}
 	}
-	
 	public static function recreate($id = null) {
-		
 		// Session ID must be regenerated when
 		//  - User logged in (+)
 		//  - User logged out (+)
 		//  - Certain period has passed (-)
-		
 		if (!self::$session_started_flag) {
 			self::init(self::$use_db);
 		}
-		
 		$sid = session_create_id('custom-');
-		
 		if(self::$use_db && $id != null) {
-		
 			$result = DatabaseManager::submitQuery("SELECT id, nickname, status FROM lza_users WHERE id = " . (int)$id);
-			
 			if (mysqli_num_rows($result)) {
 	            		$record = mysqli_fetch_assoc($result);
-	            		
 	            		if ($record['status'] == 0) {
 					self::logout();
 					header("Location: index.php?response=Deactivated user account.");
 					exit();
 				}
-				
 				if (self::exists('access')) {
 					$access = self::get('access');
-				
 					if ($access['active'] < (time() - 900)) {
 						self::logout();
 						header("Location: index.php?response=Logged out because of being idle.");
@@ -387,95 +323,71 @@ class Session {
 					}
 					self::clear('access');
 				}
-				
 				self::set('access', array(
 			    				'id' => $record['id'], 
 			    				'user' => $record['nickname'],
 			    				'status' => $record['status'], 
 			    				'active' => time())
 			    	);
-	        	}			
+	        	}
 		}
-		
 		session_commit();
-		
-		ini_set('session.use_strict_mode', 0);		
-		
+		ini_set('session.use_strict_mode', 0);
 		session_id($sid);
-		
 		session_start();
 	}
-	
-	// //////////////////////////////////////////////////////////////////////////////////////
-
+	////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	* Set a variable into the session
 	*/
 	public static function set($name, $val) {
-		
 		$_SESSION[$name] = $val;
 	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-
+	////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	* Get a variable from the session, returns null if it doesn't exist
 	* and logs a warning with the Logger
 	*/
 	public static function get($name) {
-		
-		if(isset($_SESSION[$name])) 
+		if(isset($_SESSION[$name]))
 			return $_SESSION[$name];
 		else
 			Logger::warn("Session variable \"$name\" does not exist, returning null!");
-		
 		return null;
 	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-
+	////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	* Clear a variable in the session
 	*/
 	public static function clear($name) {
-		
 		if(isset($_SESSION[$name])) unset($_SESSION[$name]);
 	}
-
-	// //////////////////////////////////////////////////////////////////////////////////////
-
+	////////////////////////////////////////////////////////////////////////////////////////
 	/**
 	* Tests whether a variable is in the session (return true if it is)
 	*/
-	public static function exists($name) {	
-		
-		if(isset($_SESSION[$name])) return true; 			
+	public static function exists($name) {
+		if(isset($_SESSION[$name])) return true;
 		return false;
 	}
-	
 	public static function exist($name){ return self::exists($name); }
-	
-	// //////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////
 	//
 	// Low-level methods to perform actual session management
 	//
 	// //////////////////////////////////////////////////////////////////////////////////////
-	
 	private static function connect() {
-		DatabaseManager::connect();	
+		DatabaseManager::connect();
 	}
-	
-	// //////////////////////////////////////////////////////////////////////////////////////	
-	// 
+	////////////////////////////////////////////////////////////////////////////////////////	
+	//
 	// Logging functions (for debug use only)
 	//
 	// //////////////////////////////////////////////////////////////////////////////////////
 
 	private static function var_log(&$varInput, $var_name='', $reference='', $method = '=', $sub = false) {
-	
 	    static $output ;
 	    static $depth ;
-	
 	    if ( $sub == false ) {
 	        $output = '' ;
 	        $depth = 0 ;
@@ -485,38 +397,29 @@ class Session {
 	    } else {
 	        ++$depth ;
 	        $var =& $varInput ;
-	       
 	    }
-	       
 	    // constants
 	    $nl = "\n" ;
 	    $block = 'a_big_recursion_protection_block';
-	   
 	    $c = $depth ;
 	    $indent = '' ;
 	    while( $c -- > 0 ) {
 	        $indent .= '  ' ;
 	    }
-	
 	    // if this has been parsed before
 	    if ( is_array($var) && isset($var[$block])) {
-	   
 	        $real =& $var[ $block ] ;
 	        $name =& $var[ 'name' ] ;
 	        $type = gettype( $real ) ;
 	        $output .= $indent.$var_name.' '.$method.'& '.($type=='array'?'Array':get_class($real)).' '.$name.$nl;
-	   
 	    // havent parsed this before
 	    } else {
-	
 	        // insert recursion blocker
 	        $var = Array( $block => $var, 'name' => $reference );
 	        $theVar =& $var[ $block ] ;
-	
 	        // print it out
 	        $type = gettype( $theVar ) ;
 	        switch( $type ) {
-	       
 	            case 'array' :
 	                //$output .= $indent . $var_name . ' '.$method.' Array ('.$nl;
 	                $keys=array_keys($theVar);
@@ -526,7 +429,6 @@ class Session {
 	                }
 	                //$output .= $indent.')'.$nl;
 	                break ;
-	           
 	            case 'object' :
 	                $output .= $indent.$var_name.' = '.get_class($theVar).' {'.$nl;
 	                foreach($theVar as $name=>$value) {
@@ -534,57 +436,40 @@ class Session {
 	                }
 	                $output .= $indent.'}'.$nl;
 	                break ;
-	           
 	            case 'string' :
 	                $output .= $indent . $var_name . ' '.$method.' "'.$theVar.'"'.$nl;
 	                break ;
-	               
 	            default :
 	                $output .= $indent . $var_name . ' '.$method.' ('.$type.') '.$theVar.$nl;
 	                break ;
-	               
 	        }
-	       
 	        // $var=$var[$block];
-	       
 	    }
-	   
 	    -- $depth ;
-	   
 	    if( $sub == false )
 	        return $output ;
-	       
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////
 
 /*
 	public static function logMessage($message, $level, $class, $function){
-	
 		if (!self::$session_started_flag){
 			self::init(self::$use_db);
 		}
-		
     	$message = mysqli_real_escape_string($message);
 	    $level = mysqli_real_escape_string($level);
- 		
 		return mysqli_query(self::$connection, "INSERT INTO lza_log (message, level, class, function) VALUES  ('$message', '$level', '$class', '$function')");
-		
 	}
 	*/
-	
 	/////////////////////////////////////////////////////////////////////////////////////////
-
-
 	/**
 	* Returns a string that represents this object, in this case a string that 
 	* contains the field values - with html new line tags
 	*/
 	public static function toString(){
 		if (!self::$session_started_flag) self::init(self::$use_db);
-		
 		$temp = '';
-		
 		$temp .= "<br><br><b>SESSION Dump</b><pre>";
 		$temp .= self::var_log($_SESSION);
 		$temp .= "</pre>";
@@ -592,21 +477,15 @@ class Session {
 		$temp .= "<b>REQUEST (GET or POST or COOKIE) Dump</b><pre>";
 		$temp .= self::var_log($_REQUEST);
 		$temp .= "</pre>";
-
 		$temp .= "<b>GET Dump</b><pre>";
 		$temp .= self::var_log($_GET);
 		$temp .= "</pre>";
-		
 		$temp .= "<b>POST Dump</b><pre>";
 		$temp .= self::var_log($_POST);
 		$temp .= "</pre>";
-		*/		
+		*/
 		return $temp;
-		
 	}
-		
-	// //////////////////////////////////////////////////////////////////////////////////////
+	////////////////////////////////////////////////////////////////////////////////////////
 }
-
-	
 ?>
