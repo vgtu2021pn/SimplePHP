@@ -38,9 +38,9 @@ class DatabaseManager {
     /** Name of MySQL database */
     private static $databaseName = "company";
     /** Username of user with admin rights to database */
-    private static $username = "manty";
+    private static $username = "company";
     /** Password of user with admin rights to database */
-    private static $password = "ačiū";
+    private static $password = "company";
     /** verbose flag, if true debug data is dumped */
     private static $verbose = false;
     /**
