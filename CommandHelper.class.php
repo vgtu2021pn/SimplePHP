@@ -1,10 +1,10 @@
 <?php
 /**
+* Current License: dual MIT/GPL license.
 * Following comment is a lie:
-* "Requires: a slighlty modified version of Garry Whites' browser detection clas>
-* for the optional init method, if you don't use this then you don't need this" >
-* For dual MIT/GPL licence.
-*/
+* "Requires: a slighlty modified version of Garry Whites' browser detection class (Browser.class.php) 
+* for the optional init method, if you don't use this then you don't need this file."
+**/
 /**
 * *******************************************************************
 *
