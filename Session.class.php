@@ -67,8 +67,8 @@ class SysSession implements SessionHandlerInterface {
     private $table_name = "lza_sessions";
     private $databaseURL = "localhost";
     private $databaseName = "company";
-    private $username = "manty";
-    private $password = "ačiū";
+    private $username = "company";
+    private $password = "company";
     /*
         self::connect();
     */
