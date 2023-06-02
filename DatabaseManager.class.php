@@ -44,12 +44,12 @@ class DatabaseManager {
     /** verbose flag, if true debug data is dumped */
     private static $verbose = false;
     /**
-     * Array of connections, we only store a connections to the master DB and
-     * and a single random slave to use for this session
+     * Array of connections, we only store a connections to the teacher DB and
+     * and a single random student to use for this session
      */
     private static $connections = null;
-    /** Maximum number of slaves */
-    public static $MAX_NO_SLAVES = 10;
+    /** Maximum number of students from (teacher/students model) */
+    public static $MAX_NO_STUDENTS = 10;
     /** Store the currently used connection */
     private static $currentCon = null;
 
@@ -85,13 +85,13 @@ class DatabaseManager {
      * Connects to the MySQL database with the parameters defined in the
      * admin class (settings.php)
      *
-     * @param oSettings Site-specific paramaters, such as username, password, server etc.
+     * @param Settings Site-specific paramaters, such as username, password, server etc.
      * @see settings.php
      */
     public static function connect() {
 
-        $slaveDBs = array();
-        $noSlaves = 0;
+        $stuDBs = array();
+        $noStu = 0;
 
         if (self::$username == "") {
 
@@ -102,11 +102,11 @@ class DatabaseManager {
                 self::$databaseName = database_name;
                 self::$verbose = database_verbose;
                 self::$databaseURL = database_host;
-                for ($i = 0; $i < self::$MAX_NO_SLAVES; $i++) {
-                    if (defined('slave_host_' . $i))
-                        eval('$slaveDBs[] = slave_host_' . $i . ';');
+                for ($i = 0; $i < self::$MAX_NO_STUDENTS; $i++) {
+                    if (defined('student_host_' . $i))
+                        eval('$stuDBs[] = student_host_' . $i . ';');
                 }
-                $noSlaves = count($slaveDBs);
+                $noStu = count($stuDBs);
             }
             else {
                 Logger::fatal("DB Username is not set, and could not find credentials in Session!!!");
@@ -116,15 +116,15 @@ class DatabaseManager {
         self::$connections = array();
         $hosts = array();
 
-        // Attempt to connect to master DB....
-        self::$connections['master'] = mysqli_connect(self::$databaseURL, self::$username, self::$password);
-        $hosts['master'] = self::$databaseURL;
+        // Attempt to connect to teacher from (teacher/students model) DB....
+        self::$connections['teacher'] = mysqli_connect(self::$databaseURL, self::$username, self::$password);
+        $hosts['teacher'] = self::$databaseURL;
 
-        // Connect to a single random slave, to use for this session
-        if ($noSlaves > 0) {
-            $host = $slaveDBs[mt_rand(0, $noSlaves - 1)];
-            self::$connections['slave'] = mysqli_connect($host, self::$username, self::$password);
-            $hosts['slave'] = $host;
+        // Connect to a single random student from (teacher/students model), to use for this session
+        if ($noStu > 0) {
+            $host = $stuDBs[mt_rand(0, $noStu - 1)];
+            self::$connections['student'] = mysqli_connect($host, self::$username, self::$password);
+            $hosts['student'] = $host;
         }
 
 
@@ -133,7 +133,6 @@ class DatabaseManager {
         foreach (self::$connections as $host => $cx) {
 
             //$cx = self::$connection[$i];
-            //$host = ($i == 0) ? $databaseURL . "(Master)" : $slaveDBs[$i-1];
 
             if ($cx != FALSE) {
 
@@ -148,8 +147,8 @@ class DatabaseManager {
                 Logger::fatal("Connection to MySQL database '$host' failed with username " . self::$username . "!");
             }
         }
-        // By default, set connection to the master DB
-        self::useMaster();
+        // By default, set connection to the teacher from (teacher/students model) DB
+        self::useTeacher();
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
@@ -168,11 +167,10 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function insert($query) {
-
 	// Prepare
 	$query = self::prepareQuery($query, func_get_args());
 
-        self::useMaster();
+        self::useTeacher();
         $result = self::internalQuery($query);
         return mysqli_insert_id(self::$currentCon);
     }
@@ -180,11 +178,10 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     public static function update($query) {
-
 	// Prepare
 	$query = self::prepareQuery($query, func_get_args());
 
-        self::useMaster();
+        self::useTeacher();
         $result = self::internalQuery($query);
         return $result;
     }
@@ -192,15 +189,14 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Perform a basic query, this will use the master connection is it can not know what kind
+     * Perform a basic query, this will use the teacher connection is it can not know what kind
      * of query the user is attempting
      */
     public static function submitQuery($query) {
-
 	// Prepare
 	$query = self::prepareQuery($query, func_get_args());
 
-        self::useMaster();
+        self::useTeacher();
         return self::internalQuery($query);
     }
 
@@ -231,10 +227,9 @@ class DatabaseManager {
      *
      */
     public static function getVar($sql) {
-
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
-        self::useSlave();
+        self::useStudent();
 
         $results = DatabaseManager::internalQuery($sql);
 
@@ -260,11 +255,10 @@ class DatabaseManager {
      * rather then a single result
      */
     public static function getColumn($sql) {
-
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
 
-        self::useSlave();
+        self::useStudent();
 
         $results = DatabaseManager::internalQuery($sql);
 
@@ -290,11 +284,10 @@ class DatabaseManager {
      * Return the first row as an associative array from a result set, or null if no results found
      */
     public static function getRow($sql) {
-
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
 
-        self::useSlave();
+        self::useStudent();
 
         $results = DatabaseManager::internalQuery($sql);
 
@@ -315,7 +308,7 @@ class DatabaseManager {
     public static function getResults($sql) {
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
-	self::useSlave();
+	self::useStudent();
 	$results = DatabaseManager::internalQuery($sql);
 	if (!$results || mysqli_num_rows($results) == 0) {
             return null;
@@ -335,11 +328,10 @@ class DatabaseManager {
      * Get a single result and return as an asssociative array
      */
     public static function getSingleResult($sql) {
-
 	// Prepare
 	$sql = self::prepareQuery($sql, func_get_args());
 
-        self::useSlave();
+        self::useStudent();
 
         $results = DatabaseManager::internalQuery($sql);
 
@@ -485,7 +477,6 @@ class DatabaseManager {
      * Perform a basic query using the current connection
      */
     private static function internalQuery($query) {
-
         // Check to see if connection has been opened, if not connect to database
         if (self::$currentCon == NULL)
             self::connect();
@@ -510,22 +501,22 @@ class DatabaseManager {
     // //////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Use the slave connection, if not available or set use the master DB instead
+     * Use the student connection, if not available or set use the teacher DB instead
      */
-    private static function useSlave() {
-        if (isset(self::$connections['slave'])) {
-            self::$currentCon = self::$connections['slave'];
+    private static function useStudent() {
+        if (isset(self::$connections['student'])) {
+            self::$currentCon = self::$connections['student'];
         } else {
-            self::useMaster();
+            self::useTeacher();
         }
     }
 
     // //////////////////////////////////////////////////////////////////////////////////////
 
-    /** Use the master connections */
-    private static function useMaster() {
-        if (isset(self::$connections['master'])) {
-		self::$currentCon = self::$connections['master'];
+    /** Use the teacher from (teacher/students model) connections */
+    private static function useTeacher() {
+        if (isset(self::$connections['teacher'])) {
+		self::$currentCon = self::$connections['teacher'];
 	}
 	if (self::$currentCon == NULL) {
 		$datetime = new DateTime('now', new DateTimeZone('Europe/Athens'));
