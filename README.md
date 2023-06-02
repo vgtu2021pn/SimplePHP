@@ -90,8 +90,8 @@ define("database_pass", "dbpass");
 define("database_name", "dbname");
 define("database_host", "localhost");
 define("database_verbose", false); // If set to true, the database will log activity using the Logger
-define("slave_host_1", "somehost"); // If set, defines a slave database to use for all reads
-define("slave_host_1", "somehost"); // If set, defines a slave database to use for all reads
+define("student_host_1", "somehost"); // If set, defines a student from (teacher/students model) database to use for all reads
+define("student_host_1", "somehost"); // If set, defines a student from (teacher/students model) database to use for all reads
 ```
 
 Though you don't need to setup or explicitly create the connection (the class will check for connection and connect if needed when you call any of its methods
